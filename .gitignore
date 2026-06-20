@@ -1,0 +1,42 @@
+# Xcode
+build/
+DerivedData/
+*.xcuserdata
+*.xcodeproj/*
+!.xcodeproj/project.xcworkspace/
+!.xcodeproj/xcshareddata/
+
+# CocoaPods
+Pods/
+*.xcworkspace
+
+# Carthage
+Carthage/
+*.framework
+*.dSYM.zip
+*.dSYM
+
+# Swift Package Manager
+.build/
+Packages
+Package.resolved
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Codesign
+*.p12
+*.mobileprovision
+
+# Keychain
+*.keychain
+*.keychain-db
+
+# Environment variables
+.env
+.env.local
+
+# Test files
+test_output.log
