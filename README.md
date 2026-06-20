@@ -41,11 +41,7 @@ AIUsageMonitor 是一个 macOS 菜单栏轻量级应用，实时监控 DeepSeek 
 
 ## 界面预览
 
-菜单栏主界面显示 DeepSeek 和 Tavily 的用量卡片：
-
 ![菜单栏主界面](docs/images/screenshot-menubar.png)
-
-设置面板可配置 API Key 和刷新间隔：
 
 ![设置面板](docs/images/screenshot-settings.png)
 
