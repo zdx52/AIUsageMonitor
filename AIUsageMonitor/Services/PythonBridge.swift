@@ -22,4 +22,14 @@ class PythonBridge {
     static func fetchTavilyUsage() async -> TavilyUsage? {
         return await TavilyService.fetchUsage()
     }
+    
+    // MARK: - OpenCode GO 用量获取
+    
+    static func fetchOpenCodeUsage() async -> OpenCodeUsage? {
+        guard let url = UserDefaults.standard.string(forKey: "openCodeWorkspaceURL"),
+              !url.isEmpty else {
+            return nil
+        }
+        return await OpenCodeService.shared.fetchUsage(urlString: url)
+    }
 }

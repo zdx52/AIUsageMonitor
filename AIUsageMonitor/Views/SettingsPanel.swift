@@ -18,7 +18,7 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
                 self.hostingView = NSHostingView(rootView: AnyView(settingsView))
                 
                 let panel = NSPanel(
-                    contentRect: NSRect(x: 0, y: 0, width: 420, height: 460),
+                    contentRect: NSRect(x: 0, y: 0, width: 480, height: 640),
                     styleMask: [.titled, .closable, .resizable, .utilityWindow, .nonactivatingPanel],
                     backing: .buffered,
                     defer: false

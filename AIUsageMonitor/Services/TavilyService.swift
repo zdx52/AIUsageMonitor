@@ -44,6 +44,7 @@ class TavilyService {
                 createdAt: ""
             )
         } catch {
+            print("❌ Tavily API 请求失败: \(error.localizedDescription)")
             return nil
         }
     }

@@ -68,6 +68,135 @@ struct MenuBarView: View {
             
             Divider()
             
+            // OpenCode GO 数据
+            UsageCard(
+                icon: "🔄",
+                title: "OpenCode GO",
+                color: .orange
+            ) {
+                switch dataStore.openCodeStatus {
+                case .notConfigured:
+                    Text("未配置")
+                        .foregroundColor(.secondary)
+                    Text("请在设置中配置 OpenCode 工作区")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                case .noCookies:
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack {
+                            Text("⚠️")
+                            Text("登录已过期")
+                                .foregroundColor(.orange)
+                                .fontWeight(.medium)
+                        }
+                        Text("Cookie 已失效，需要重新登录")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Button("重新登录") {
+                            let url = UserDefaults.standard.string(forKey: "openCodeWorkspaceURL") ?? ""
+                            OpenCodeService.shared.showLoginWindow(urlString: url) {
+                                Task { await dataStore.refreshAll() }
+                            }
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                    }
+                    
+                case .needsLogin:
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack {
+                            Text("⚠️")
+                            Text("需要登录")
+                                .foregroundColor(.orange)
+                                .fontWeight(.medium)
+                        }
+                        Text("被重定向到了登录页")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Button("重新登录") {
+                            let url = UserDefaults.standard.string(forKey: "openCodeWorkspaceURL") ?? ""
+                            OpenCodeService.shared.showLoginWindow(urlString: url) {
+                                Task { await dataStore.refreshAll() }
+                            }
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                    }
+                    
+                case .fetchFailed:
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack {
+                            Text("❌")
+                            Text("数据获取失败")
+                                .foregroundColor(.red)
+                                .fontWeight(.medium)
+                        }
+                        Text("RPC 和页面抓取均失败，可能需要重新登录")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Button("重新登录") {
+                            let url = UserDefaults.standard.string(forKey: "openCodeWorkspaceURL") ?? ""
+                            OpenCodeService.shared.showLoginWindow(urlString: url) {
+                                Task { await dataStore.refreshAll() }
+                            }
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                    }
+                    
+                case .success:
+                    if let oc = dataStore.openCodeUsage {
+                        // 三种用量显示
+                        if let rolling = oc.rollingPercent {
+                            UsageRow(label: "滚动用量", value: "\(Int(rolling))%")
+                            if let reset = oc.rollingReset {
+                                Text("重置于 \(reset)")
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        
+                        if let weekly = oc.weeklyPercent {
+                            UsageRow(label: "每周用量", value: "\(Int(weekly))%")
+                            if let reset = oc.weeklyReset {
+                                Text("重置于 \(reset)")
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        
+                        if let monthly = oc.monthlyPercent {
+                            UsageRow(label: "每月用量", value: "\(Int(monthly))%")
+                            if let reset = oc.monthlyReset {
+                                Text("重置于 \(reset)")
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        
+                        // 如果没有解析到三种用量，显示旧格式
+                        if oc.rollingPercent == nil && oc.weeklyPercent == nil && oc.monthlyPercent == nil {
+                            if let pct = oc.rpcUsagePercent {
+                                UsageRow(label: "用量", value: "\(Int(pct))%")
+                            } else if !oc.usagePercentages.isEmpty {
+                                UsageRow(label: "用量", value: "\(oc.usagePercentages.first!)%")
+                            } else {
+                                UsageRow(label: "状态", value: "已订阅")
+                            }
+                        }
+                        
+                        if oc.useBalance {
+                            Text("已启用余额补充")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+            }
+            
+            Divider()
+            
             // 刷新时间
             if let time = dataStore.lastRefreshTime {
                 Text("上次刷新: \(time, style: .time)")
