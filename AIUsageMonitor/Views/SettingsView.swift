@@ -14,6 +14,9 @@ struct SettingsView: View {
     @State private var showMessage: Bool = false
     @State private var isLoggingIn: Bool = false
     @State private var loginMessage: String = ""
+    @State private var showDeepSeek: Bool = true
+    @State private var showTavily: Bool = true
+    @State private var showOpenCode: Bool = true
     
     var body: some View {
         ScrollView {
@@ -38,6 +41,21 @@ struct SettingsView: View {
                         dismiss()
                     }
                     .keyboardShortcut(.escape, modifiers: [])
+                }
+                
+                Divider()
+                
+                // MARK: - 显示设置
+                GroupBox("👁️ 显示设置") {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("选择在菜单栏弹窗中显示哪些内容")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Toggle("DeepSeek 余额", isOn: $showDeepSeek)
+                        Toggle("Tavily 用量", isOn: $showTavily)
+                        Toggle("OpenCode GO 用量", isOn: $showOpenCode)
+                    }
+                    .padding(.vertical, 4)
                 }
                 
                 Divider()
@@ -173,6 +191,10 @@ struct SettingsView: View {
         if let interval = UserDefaults.standard.object(forKey: "refreshInterval") as? Double {
             refreshInterval = interval
         }
+        
+        showDeepSeek = UserDefaults.standard.object(forKey: "showDeepSeek") as? Bool ?? true
+        showTavily = UserDefaults.standard.object(forKey: "showTavily") as? Bool ?? true
+        showOpenCode = UserDefaults.standard.object(forKey: "showOpenCode") as? Bool ?? true
     }
     
     private func saveSettings() {
@@ -180,6 +202,9 @@ struct SettingsView: View {
         KeychainHelper.save(key: "tavily_api_key", value: tavilyKey)
         UserDefaults.standard.set(openCodeURL, forKey: "openCodeWorkspaceURL")
         UserDefaults.standard.set(refreshInterval, forKey: "refreshInterval")
+        UserDefaults.standard.set(showDeepSeek, forKey: "showDeepSeek")
+        UserDefaults.standard.set(showTavily, forKey: "showTavily")
+        UserDefaults.standard.set(showOpenCode, forKey: "showOpenCode")
         
         withAnimation {
             saveMessage = "✅ 已保存"

@@ -126,40 +126,46 @@ class DataStore: ObservableObject {
         return await OpenCodeService.shared.fetchUsage(urlString: url)
     }
     private func updateMenuBarTitle() {
+        let ud = UserDefaults.standard
         var parts: [String] = []
-        
-        if let ds = deepSeekBalance {
-            parts.append("DS ¥\(String(format: "%.1f", ds.totalBalance))")
-        } else {
-            parts.append("DS --")
+
+        if ud.bool(forKey: "showDeepSeek") {
+            if let ds = deepSeekBalance {
+                parts.append("DS ¥\(String(format: "%.1f", ds.totalBalance))")
+            } else {
+                parts.append("DS --")
+            }
         }
-        
-        if let tv = tavilyUsage {
-            parts.append("TV \(tv.remaining)/\(tv.monthlyLimit)")
-        } else {
-            parts.append("TV --")
+
+        if ud.bool(forKey: "showTavily") {
+            if let tv = tavilyUsage {
+                parts.append("TV \(tv.remaining)/\(tv.monthlyLimit)")
+            } else {
+                parts.append("TV --")
+            }
         }
-        
-        // OpenCode: 根据状态显示不同图标
-        switch openCodeStatus {
-        case .notConfigured:
-            break // 不显示
-        case .noCookies, .needsLogin:
-            parts.append("OC ⚠️")
-        case .fetchFailed:
-            parts.append("OC ❌")
-        case .success:
-            if let oc = openCodeUsage {
-                if let pct = oc.rpcUsagePercent {
-                    parts.append("OC \(Int(pct))%")
-                } else if let firstPct = oc.usagePercentages.first {
-                    parts.append("OC \(firstPct)%")
-                } else {
-                    parts.append("OC ✅")
+
+        if ud.bool(forKey: "showOpenCode") {
+            switch openCodeStatus {
+            case .notConfigured:
+                parts.append("OC --")
+            case .noCookies, .needsLogin:
+                parts.append("OC ⚠️")
+            case .fetchFailed:
+                parts.append("OC ❌")
+            case .success:
+                if let oc = openCodeUsage {
+                    if let pct = oc.rpcUsagePercent {
+                        parts.append("OC \(Int(pct))%")
+                    } else if let firstPct = oc.usagePercentages.first {
+                        parts.append("OC \(firstPct)%")
+                    } else {
+                        parts.append("OC ✅")
+                    }
                 }
             }
         }
-        
-        menuBarTitle = parts.joined(separator: " | ")
+
+        menuBarTitle = parts.isEmpty ? "--" : parts.joined(separator: " | ")
     }
 }
