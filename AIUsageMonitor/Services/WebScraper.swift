@@ -11,6 +11,7 @@ class WebViewScraper: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
     private var webView: WKWebView?
     private var completion: ((WebScrapeResult) -> Void)?
     private var timeoutTimer: Timer?
+    private var isFinished = false
     
     func scrape(url: String, timeout: TimeInterval = 15) async -> WebScrapeResult {
         return await withCheckedContinuation { continuation in
@@ -66,6 +67,8 @@ class WebViewScraper: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
     }
     
     private func finishWith(result: WebScrapeResult) {
+        guard !isFinished else { return }
+        isFinished = true
         timeoutTimer?.invalidate()
         completion?(result)
         completion = nil

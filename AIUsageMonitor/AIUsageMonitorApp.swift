@@ -30,18 +30,47 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
         
-        refreshTimer = Timer.scheduledTimer(withTimeInterval: 300, repeats: true) { [weak self] _ in
-            Task {
-                await self?.dataStore.refreshAll()
-            }
-        }
+        setupRefreshTimer()
+        
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(userDefaultsDidChange),
+            name: UserDefaults.didChangeNotification,
+            object: nil
+        )
         
         Task {
             await dataStore.refreshAll()
         }
     }
     
+    func setupRefreshTimer() {
+        refreshTimer?.invalidate()
+        
+        let interval: TimeInterval
+        if let saved = UserDefaults.standard.object(forKey: "refreshInterval") as? Double, saved >= 60 {
+            interval = saved
+        } else {
+            interval = 300
+        }
+        
+        print("⏱️ 设置刷新间隔: \(Int(interval / 60)) 分钟")
+        
+        refreshTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
+            Task {
+                await self?.dataStore.refreshAll()
+            }
+        }
+    }
+    
+    @objc func userDefaultsDidChange() {
+        DispatchQueue.main.async { [weak self] in
+            self?.setupRefreshTimer()
+        }
+    }
+    
     func applicationWillTerminate(_ notification: Notification) {
         refreshTimer?.invalidate()
+        NotificationCenter.default.removeObserver(self)
     }
 }

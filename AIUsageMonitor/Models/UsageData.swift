@@ -51,9 +51,9 @@ class DataStore: ObservableObject {
         
         // 并行获取所有数据
         async let dsBalance = DeepSeekService.fetchBalance()
-        async let dsUsage = PythonBridge.fetchDeepSeekUsage()
-        async let tvUsage = PythonBridge.fetchTavilyUsage()
-        async let ocUsage = PythonBridge.fetchOpenCodeUsage()
+        async let dsUsage = fetchDeepSeekUsage()
+        async let tvUsage = fetchTavilyUsage()
+        async let ocUsage = fetchOpenCodeUsage()
         
         let ds = await dsBalance
         let dsUsageData = await dsUsage
@@ -98,6 +98,33 @@ class DataStore: ObservableObject {
         }
     }
     
+
+    // MARK: - 数据获取（原 PythonBridge）
+
+    private func fetchDeepSeekUsage() async -> DeepSeekUsage? {
+        if let todayCost = await DeepSeekUsageScraper.fetchTodayUsage() {
+            return DeepSeekUsage(
+                totalBalance: 0,
+                grantedBalance: 0,
+                toppedUpBalance: 0,
+                todayCost: todayCost,
+                currency: "CNY"
+            )
+        }
+        return nil
+    }
+
+    private func fetchTavilyUsage() async -> TavilyUsage? {
+        return await TavilyService.fetchUsage()
+    }
+
+    private func fetchOpenCodeUsage() async -> OpenCodeUsage? {
+        guard let url = UserDefaults.standard.string(forKey: "openCodeWorkspaceURL"),
+              !url.isEmpty else {
+            return nil
+        }
+        return await OpenCodeService.shared.fetchUsage(urlString: url)
+    }
     private func updateMenuBarTitle() {
         var parts: [String] = []
         

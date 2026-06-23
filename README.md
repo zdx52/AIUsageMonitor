@@ -15,7 +15,7 @@
   <img alt="macOS" src="https://img.shields.io/badge/platform-macOS-lightgray">
 </p>
 
-AIUsageMonitor 是一个 macOS 菜单栏轻量级应用，实时监控 DeepSeek 和 Tavily 的 API 用量与余额。通过菜单栏常驻，随时掌握 AI 账户状态，支持自动刷新和手动刷新。
+AIUsageMonitor 是一个 macOS 菜单栏轻量级应用，实时监控 DeepSeek、Tavily 和 OpenCode GO 的 API 用量与余额。通过菜单栏常驻，随时掌握 AI 账户状态，支持自动刷新和手动刷新。
 
 ## 快速使用
 
@@ -29,15 +29,19 @@ AIUsageMonitor 是一个 macOS 菜单栏轻量级应用，实时监控 DeepSeek 
 2. 首次打开需要在"系统设置 > 隐私与安全性"中允许
 3. 菜单栏会出现 🤖 图标，点击即可查看用量
 4. 在设置面板中配置 DeepSeek 和 Tavily 的 API Key
+5. 在设置面板中配置 OpenCode GO 工作区 URL 并通过内置浏览器登录
+
 
 ## 功能特性
 
 - 🐋 **DeepSeek 余额监控** — 实时查询账户总余额、赠送余额、充值余额
 - 🔍 **Tavily 用量监控** — 查看月度额度、已用和剩余额度
+- 🔄 **OpenCode GO 用量监控** — 滚动/每周/每月三维度用量查询，登录态检测与管理
+
 - 🔒 **Keychain 安全存储** — API Key 存储在 macOS 钥匙串，不明文保存
-- ⏱️ **自动刷新** — 每 5 分钟自动更新数据
+- ⏱️ **自定义自动刷新** — 可自定义刷新间隔（1-30分钟），设置即生效
 - 🎛️ **菜单栏常驻** — 轻量运行，不占用桌面空间
-- ⚙️ **设置面板** — 可视化配置 API Key 和刷新间隔
+- ⚙️ **设置面板** — 可视化配置 API Key、OpenCode 工作区和刷新间隔
 
 ## 界面预览
 
@@ -56,6 +60,13 @@ AIUsageMonitor 是一个 macOS 菜单栏轻量级应用，实时监控 DeepSeek 
 
 - 用量通过 `https://api.tavily.com/usage` 获取
 - 显示计划类型、月度额度、已用 credits 和剩余 credits
+
+### OpenCode GO
+
+- 用量通过 RPC 调用 + WKWebView 页面抓取获取
+- 显示滚动、每周、每月三维度用量百分比及重置时间
+- 支持登录态检测与内置浏览器重新登录
+
 
 ## 常见问题
 
