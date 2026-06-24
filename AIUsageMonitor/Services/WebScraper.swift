@@ -12,6 +12,7 @@ class WebViewScraper: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
     private var completion: ((WebScrapeResult) -> Void)?
     private var timeoutTimer: Timer?
     private var isFinished = false
+    private var webConfig: WKWebViewConfiguration?
     
     func scrape(url: String, timeout: TimeInterval = 15) async -> WebScrapeResult {
         return await withCheckedContinuation { continuation in
@@ -44,7 +45,8 @@ class WebViewScraper: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
                 )
                 config.userContentController.addUserScript(userScript)
                 config.userContentController.add(self, name: "apiInterceptor")
-                
+               
+                self.webConfig = config
                 self.webView = WKWebView(frame: NSRect(x: 0, y: 0, width: 1280, height: 800), configuration: config)
                 self.webView?.navigationDelegate = self
                 self.completion = { result in
@@ -70,9 +72,12 @@ class WebViewScraper: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
         guard !isFinished else { return }
         isFinished = true
         timeoutTimer?.invalidate()
+        // 卸下 JS 消息处理器，避免 WKWebView 持有本对象导致内存泄漏
+        webConfig?.userContentController.removeScriptMessageHandler(forName: "apiInterceptor")
         completion?(result)
         completion = nil
         webView = nil
+        webConfig = nil
     }
     
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
@@ -102,8 +107,8 @@ class WebViewScraper: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
                 }
                 
                 if let jsonString = result as? String,
-                   let data = jsonString.data(using: .utf8),
-                   let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                    let data = jsonString.data(using: .utf8),
+                    let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
                     self.finishWith(result: WebScrapeResult(success: true, data: json, error: nil))
                 } else {
                     self.finishWith(result: WebScrapeResult(success: false, data: nil, error: "解析失败"))
@@ -133,11 +138,16 @@ class DeepSeekUsageScraper {
         if let bodyText = data["bodyText"] as? String {
             let patterns = [
                 "今日消耗[：:]?\\s*[¥￥]([\\d.]+)",
-                "Today[：:]?\\s*[¥￥]([\\d.]+)"
+                "Today[：:]?\\s*[¥￥]([\\d.]+)",
+                "Today's Usage[：:]?\\s*[¥￥]([\\d.]+)",
+                "今日已用[：:]?\\s*[¥￥]([\\d.]+)",
+                "今日花费[：:]?\\s*[¥￥]([\\d.]+)",
+                "consumed today[：:]?\\s*[¥￥]([\\d.]+)",
+                "(?i)today.*?usage[^¥￥]*[¥￥]([\\d.]+)"
             ]
             for pattern in patterns {
                 if let regex = try? NSRegularExpression(pattern: pattern),
-                   let match = regex.firstMatch(in: bodyText, range: NSRange(bodyText.startIndex..., in: bodyText)) {
+                    let match = regex.firstMatch(in: bodyText, range: NSRange(bodyText.startIndex..., in: bodyText)) {
                     let numStr = String(bodyText[Range(match.range(at: 1), in: bodyText)!])
                     return Double(numStr)
                 }

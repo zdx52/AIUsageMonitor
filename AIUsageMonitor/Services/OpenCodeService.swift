@@ -104,7 +104,7 @@ class OpenCodeService: NSObject, WKNavigationDelegate {
                 let hasKnownKey = resultObj.keys.contains { knownKeys.contains($0) }
                 
                 if hasKnownKey,
-                   let resultData = try? JSONSerialization.data(withJSONObject: resultObj) {
+                    let resultData = try? JSONSerialization.data(withJSONObject: resultObj) {
                     if let parsed = try? JSONDecoder().decode(OpenCodeRPCResponse.self, from: resultData) {
                         return parsed
                     }
@@ -206,7 +206,7 @@ class OpenCodeService: NSObject, WKNavigationDelegate {
         guard let url = URL(string: urlString) else { return nil }
         let components = url.pathComponents
         if let wrkIndex = components.firstIndex(of: "workspace"),
-           wrkIndex + 1 < components.count {
+            wrkIndex + 1 < components.count {
             let candidate = components[wrkIndex + 1]
             if candidate.hasPrefix("wrk_") {
                 return candidate
@@ -379,16 +379,13 @@ class OpenCodeService: NSObject, WKNavigationDelegate {
         fetchTimeoutTimer?.invalidate()
         fetchTimeoutTimer = nil
         fetchWebView?.navigationDelegate = nil
+        // 卸下 JS 消息处理器，WKWebView 会强持有 handler
+        fetchWebView?.configuration.userContentController.removeScriptMessageHandler(forName: "openCodeData")
         fetchWebView = nil
         fetchCompletion = nil
         capturedAPIData = [:]
         capturedPageText = ""
-        
-        // 移除消息处理器
-        if let handler = scriptMessageHandler {
-            WKWebsiteDataStore.default().httpCookieStore.getAllCookies { _ in }
-            scriptMessageHandler = nil
-        }
+        scriptMessageHandler = nil
     }
     
     private func finishFetch(usage: OpenCodeUsage?) {
@@ -421,11 +418,11 @@ class OpenCodeService: NSObject, WKNavigationDelegate {
                   let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
                 // 也可能是数组格式 [null, {...}]
                 if let dataStr = body["data"] as? String,
-                   let url = body["url"] as? String,
-                   let data = dataStr.data(using: .utf8),
-                   let jsonArray = try? JSONSerialization.jsonObject(with: data) as? [Any],
-                   jsonArray.count >= 2,
-                   let resultObj = jsonArray[1] as? [String: Any] {
+                    let url = body["url"] as? String,
+                    let data = dataStr.data(using: .utf8),
+                    let jsonArray = try? JSONSerialization.jsonObject(with: data) as? [Any],
+                    jsonArray.count >= 2,
+                    let resultObj = jsonArray[1] as? [String: Any] {
                     capturedAPIData[url] = resultObj
                     print("📡 OpenCode API 拦截（数组格式）: \(url)")
                 }

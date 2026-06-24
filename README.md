@@ -103,3 +103,15 @@ xcodebuild -project AIUsageMonitor.xcodeproj -scheme AIUsageMonitor -configurati
 ## 许可证
 
 MIT License
+
+## 更新日志
+
+### v1.2.1 (2026-06-24)
+
+🐛 **Bug 修复**
+- 修复 WKWebView JS 消息处理器未释放导致的内存泄漏（WebScraper、OpenCodeService）
+- 修复登录导航代理闭包强持有 self 的问题
+
+🔧 **优化**
+- 增强 DeepSeek 今日消耗页面解析容错性（7 种正则模式兜底，不再依赖单一文案）
+- 设置面板高度改为自适应（400-800px 动态调整）
