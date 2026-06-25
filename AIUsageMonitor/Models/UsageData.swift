@@ -32,6 +32,7 @@ struct DeepSeekUsage: Equatable {
     let currency: String
 }
 
+@MainActor
 class DataStore: ObservableObject {
     @Published var menuBarTitle: String = "⏳ 加载中..."
     @Published var deepSeekBalance: DeepSeekUsage?
@@ -44,10 +45,8 @@ class DataStore: ObservableObject {
     @Published var errorMessage: String?
     
     func refreshAll() async {
-        await MainActor.run {
-            isLoading = true
-            errorMessage = nil
-        }
+        isLoading = true
+        errorMessage = nil
         
         // 并行获取所有数据
         async let dsBalance = DeepSeekService.fetchBalance()
@@ -60,42 +59,40 @@ class DataStore: ObservableObject {
         let tavilyData = await tvUsage
         let openCodeData = await ocUsage
         
-        await MainActor.run {
-            // 合并 DeepSeek 余额和今日消耗
-            if var balance = ds {
-                balance.todayCost = dsUsageData?.todayCost ?? 0
-                self.deepSeekBalance = balance
-            } else if let usageData = dsUsageData {
-                self.deepSeekBalance = usageData
-            } else {
-                self.deepSeekBalance = nil
-            }
-            
-            self.tavilyUsage = tavilyData
-            
-            // OpenCode
-            if let oc = openCodeData {
-                self.openCodeUsage = oc
-                self.openCodeNeedsLogin = oc.needsLogin
-                self.openCodeStatus = oc.status
-            } else {
-                let url = UserDefaults.standard.string(forKey: "openCodeWorkspaceURL") ?? ""
-                if url.isEmpty {
-                    self.openCodeStatus = .notConfigured
-                    self.openCodeNeedsLogin = false
-                } else {
-                    // 有 URL 但获取失败 → 可能是 cookie 过期
-                    self.openCodeStatus = .fetchFailed
-                    self.openCodeNeedsLogin = true
-                    self.openCodeUsage = OpenCodeUsage(status: .fetchFailed)
-                }
-            }
-            
-            self.lastRefreshTime = Date()
-            self.isLoading = false
-            
-            self.updateMenuBarTitle()
+        // 合并 DeepSeek 余额和今日消耗
+        if var balance = ds {
+            balance.todayCost = dsUsageData?.todayCost ?? 0
+            self.deepSeekBalance = balance
+        } else if let usageData = dsUsageData {
+            self.deepSeekBalance = usageData
+        } else {
+            self.deepSeekBalance = nil
         }
+        
+        self.tavilyUsage = tavilyData
+        
+        // OpenCode
+        if let oc = openCodeData {
+            self.openCodeUsage = oc
+            self.openCodeNeedsLogin = oc.needsLogin
+            self.openCodeStatus = oc.status
+        } else {
+            let url = UserDefaults.standard.string(forKey: "openCodeWorkspaceURL") ?? ""
+            if url.isEmpty {
+                self.openCodeStatus = .notConfigured
+                self.openCodeNeedsLogin = false
+            } else {
+                // 有 URL 但获取失败 → 可能是 cookie 过期
+                self.openCodeStatus = .fetchFailed
+                self.openCodeNeedsLogin = true
+                self.openCodeUsage = OpenCodeUsage(status: .fetchFailed)
+            }
+        }
+        
+        self.lastRefreshTime = Date()
+        self.isLoading = false
+        
+        self.updateMenuBarTitle()
     }
     
 

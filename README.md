@@ -106,6 +106,20 @@ MIT License
 
 ## 更新日志
 
+### v1.3.0 (2026-06-25)
+
+🏗️ **重构**
+- 拆分 OpenCodeService（862 行）为三个职责清晰的模块：OpenCodeService（99 行，编排）、OpenCodeRPC（137 行，RPC 客户端）、OpenCodeWebViewScraper（573 行，WebView 抓取）
+- 删除冗余的 OpenCodeScriptMessageHandler，WebViewScraper 直接实现 WKScriptMessageHandler
+
+⚡ **优化**
+- DataStore 和 AppDelegate 改用 @MainActor，消除手动 MainActor.run 包裹
+- KeychainHelper 增加 OSStatus 错误检查和安全解包，不再静默失败
+- 移除冗余的 UserDefaults.synchronize() 调用
+
+✅ **测试**
+- 新增单元测试框架，10 个测试覆盖 DeepSeek/Tavily/OpenCode 的 Codable 解码和模型初始化
+
 ### v1.2.1 (2026-06-24)
 
 🐛 **Bug 修复**
