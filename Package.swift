@@ -13,6 +13,11 @@ let package = Package(
             resources: [
                 .copy("Assets.xcassets")
             ]
+        ),
+        .testTarget(
+            name: "AIUsageMonitorTests",
+            dependencies: ["AIUsageMonitor"],
+            path: "Tests/AIUsageMonitorTests"
         )
     ]
 )

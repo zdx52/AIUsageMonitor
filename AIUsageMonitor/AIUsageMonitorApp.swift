@@ -20,6 +20,7 @@ struct AIUsageMonitorApp: App {
     }
 }
 
+@MainActor
 class AppDelegate: NSObject, NSApplicationDelegate {
     let dataStore = DataStore()
     var refreshTimer: Timer?
@@ -57,16 +58,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         print("⏱️ 设置刷新间隔: \(Int(interval / 60)) 分钟")
         
         refreshTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
-            Task {
+            Task { @MainActor in
                 await self?.dataStore.refreshAll()
             }
         }
     }
     
     @objc func userDefaultsDidChange() {
-        DispatchQueue.main.async { [weak self] in
-            self?.setupRefreshTimer()
-        }
+        setupRefreshTimer()
     }
     
     func applicationWillTerminate(_ notification: Notification) {

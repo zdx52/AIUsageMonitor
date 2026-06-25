@@ -4,7 +4,10 @@ import Security
 class KeychainHelper {
     
     static func save(key: String, value: String) {
-        let data = value.data(using: .utf8)!
+        guard let data = value.data(using: .utf8) else {
+            print("⚠️ Keychain save: 字符串转 Data 失败 (key: \(key))")
+            return
+        }
         
         // 先删除旧的
         delete(key: key)
@@ -17,7 +20,10 @@ class KeychainHelper {
             kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlocked
         ]
         
-        SecItemAdd(query as CFDictionary, nil)
+        let status = SecItemAdd(query as CFDictionary, nil)
+        if status != errSecSuccess {
+            print("⚠️ Keychain save 失败 (key: \(key), status: \(status))")
+        }
     }
     
     static func get(key: String) -> String? {
@@ -46,6 +52,9 @@ class KeychainHelper {
             kSecAttrAccount as String: key
         ]
         
-        SecItemDelete(query as CFDictionary)
+        let status = SecItemDelete(query as CFDictionary)
+        if status != errSecSuccess && status != errSecItemNotFound {
+            print("⚠️ Keychain delete 失败 (key: \(key), status: \(status))")
+        }
     }
 }
