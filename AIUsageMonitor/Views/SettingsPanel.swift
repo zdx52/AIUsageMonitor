@@ -49,8 +49,9 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
         }
     }
     
-    func windowDidClose(_ notification: Notification) {
+    private func windowDidClose(_ notification: Notification) {
         hostingView = nil
         currentDataStore = nil
+        self.window = nil
     }
 }

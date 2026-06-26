@@ -2,9 +2,9 @@ import AppKit
 import WebKit
 import Foundation
 
-// MARK: - OpenCode 服务（编排 RPC + WebView 回退）
+// MARK: - OpenCode 服务
 
-class OpenCodeService: NSObject {
+class OpenCodeService: NSObject, NSWindowDelegate {
     
     static let shared = OpenCodeService()
     
@@ -12,17 +12,20 @@ class OpenCodeService: NSObject {
     private let webScraper = OpenCodeWebViewScraper()
     private let loginDelegate = LoginWindowNavigationDelegate()
     private var fetchLoginWindow: NSWindow?
-
+    
     // MARK: - 获取用量数据（入口）
     
     func fetchUsage(urlString: String) async -> OpenCodeUsage? {
-        
-        // 同步检查 HTTPCookieStorage（WKWebView 登录后 cookie 会同步到这里）
+        // 检查 HTTPCookieStorage
         let ocURL = URL(string: "https://opencode.ai")!
         let httpCookies = HTTPCookieStorage.shared.cookies(for: ocURL) ?? []
         
         if httpCookies.isEmpty {
-            return OpenCodeUsage(needsLogin: true, status: .noCookies)
+            // 再检查 WKWebView cookie store
+            let wkCookies = await rpcClient.getCookies(for: "opencode.ai")
+            if wkCookies.isEmpty {
+                return OpenCodeUsage(needsLogin: true, status: .noCookies)
+            }
         }
         
         let workspaceID = rpcClient.extractWorkspaceID(from: urlString)
@@ -59,22 +62,36 @@ class OpenCodeService: NSObject {
             return r
         }
         
-        // 4. 全部失败
         print("❌ OpenCode 所有获取方式均失败")
         return OpenCodeUsage(needsLogin: true, status: .fetchFailed)
     }
     
-    // MARK: - 登录窗口
+    // MARK: - WKWebView 登录窗口
     
-    func showLoginWindow(urlString: String, onSuccess: (() -> Void)? = nil) {
+    func showLoginWindow(urlString: String, completion: @escaping (Bool) -> Void) {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
+            
+            // 关闭已有窗口
+            if let existingWindow = self.fetchLoginWindow {
+                existingWindow.close()
+                self.fetchLoginWindow = nil
+            }
             
             let config = WKWebViewConfiguration()
             config.websiteDataStore = WKWebsiteDataStore.default()
             
             let webView = WKWebView(frame: NSRect(x: 0, y: 0, width: 900, height: 700), configuration: config)
-            self.loginDelegate.onLoginSuccess = onSuccess
+            
+            // 登录成功或失败时都回调
+            self.loginDelegate.onLoginSuccess = {
+                self.fetchLoginWindow = nil
+                completion(true)
+            }
+            self.loginDelegate.onLoginFailed = {
+                self.fetchLoginWindow = nil
+                completion(false)
+            }
             webView.navigationDelegate = self.loginDelegate
             
             let window = NSWindow(
@@ -88,6 +105,7 @@ class OpenCodeService: NSObject {
             window.center()
             window.makeKeyAndOrderFront(nil)
             window.isReleasedWhenClosed = false
+            window.delegate = self
             
             self.fetchLoginWindow = window
             
@@ -95,5 +113,23 @@ class OpenCodeService: NSObject {
                 webView.load(URLRequest(url: url))
             }
         }
+    }
+    
+    // MARK: - NSWindowDelegate
+    
+    func windowWillClose(_ notification: Notification) {
+        guard let window = notification.object as? NSWindow,
+              window === self.fetchLoginWindow else { return }
+        print("🔒 OpenCode 登录窗口被用户关闭")
+        self.fetchLoginWindow = nil
+        self.loginDelegate.onLoginFailed?()
+    }
+    
+    // MARK: - 在系统浏览器中打开（备用）
+    
+    func openInBrowser(urlString: String) {
+        guard let url = URL(string: urlString) else { return }
+        NSWorkspace.shared.open(url)
+        print("🌐 已打开系统浏览器: \(urlString)")
     }
 }

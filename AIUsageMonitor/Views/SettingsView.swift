@@ -123,12 +123,25 @@ struct SettingsView: View {
                             .textFieldStyle(.roundedBorder)
                         
                         VStack(alignment: .leading, spacing: 6) {
-                            Text("💡 在 App 内登录（自动保存登录态）：")
+                            Text("💡 在浏览器中登录 OpenCode（推荐使用 Safari）：")
                                 .font(.caption2)
                                 .foregroundColor(.secondary)
                             
                             Button("在 App 内登录") {
-                                startLogin()
+                                isLoggingIn = true
+                                loginMessage = ""
+                                UserDefaults.standard.set(openCodeURL, forKey: "openCodeWorkspaceURL")
+                                OpenCodeService.shared.showLoginWindow(urlString: openCodeURL) { success in
+                                    DispatchQueue.main.async {
+                                        isLoggingIn = false
+                                        if success {
+                                            loginMessage = "✅ 登录成功！数据已刷新"
+                                            Task { await dataStore.refreshAll() }
+                                        } else {
+                                            loginMessage = "⚠️ 登录取消或失败，请重试"
+                                        }
+                                    }
+                                }
                             }
                             .disabled(openCodeURL.isEmpty || isLoggingIn)
                             .buttonStyle(.bordered)
@@ -146,17 +159,9 @@ struct SettingsView: View {
                             if !loginMessage.isEmpty {
                                 Text(loginMessage)
                                     .font(.caption)
-                                    .foregroundColor(.green)
+                                    .foregroundColor(loginMessage.contains("✅") ? .green : .secondary)
                             }
                         }
-                        
-                        Text("登录成功后窗口会自动关闭，数据会自动刷新")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-                        
-                        Text("提示: 登录一次后，重启 App 也无需重新登录。更换账号或工作区修改 URL 后重新登录即可")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
                     }
                     .padding(.vertical, 4)
                 }
@@ -222,23 +227,5 @@ struct SettingsView: View {
         }
     }
     
-    private func startLogin() {
-        isLoggingIn = true
-        loginMessage = ""
-        
-        // 先保存 URL
-        UserDefaults.standard.set(openCodeURL, forKey: "openCodeWorkspaceURL")
-        
-        OpenCodeService.shared.showLoginWindow(urlString: openCodeURL) {
-            DispatchQueue.main.async {
-                isLoggingIn = false
-                loginMessage = "✅ 登录成功！数据已刷新"
-                
-                // 触发数据刷新
-                Task {
-                    await dataStore.refreshAll()
-                }
-            }
-        }
-    }
+    // startLogin() 已移除，改用「在浏览器中登录」+「检查登录状态」
 }

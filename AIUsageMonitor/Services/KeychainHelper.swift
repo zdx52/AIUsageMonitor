@@ -12,12 +12,14 @@ class KeychainHelper {
         // 先删除旧的
         delete(key: key)
         
+        // 使用 App Bundle ID 作为 service name，避免权限冲突
+        let serviceName = Bundle.main.bundleIdentifier ?? "com.aiusagemonitor"
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: "com.aiusagemonitor",
+            kSecAttrService as String: serviceName,
             kSecAttrAccount as String: key,
             kSecValueData as String: data,
-            kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlocked
+            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock
         ]
         
         let status = SecItemAdd(query as CFDictionary, nil)
@@ -27,9 +29,10 @@ class KeychainHelper {
     }
     
     static func get(key: String) -> String? {
+        let serviceName = Bundle.main.bundleIdentifier ?? "com.aiusagemonitor"
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: "com.aiusagemonitor",
+            kSecAttrService as String: serviceName,
             kSecAttrAccount as String: key,
             kSecReturnData as String: true,
             kSecMatchLimit as String: kSecMatchLimitOne
@@ -46,9 +49,10 @@ class KeychainHelper {
     }
     
     static func delete(key: String) {
+        let serviceName = Bundle.main.bundleIdentifier ?? "com.aiusagemonitor"
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: "com.aiusagemonitor",
+            kSecAttrService as String: serviceName,
             kSecAttrAccount as String: key
         ]
         

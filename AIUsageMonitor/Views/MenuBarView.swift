@@ -132,13 +132,15 @@ struct MenuBarView: View {
                             Label("登录已过期", systemImage: "exclamationmark.triangle")
                                 .foregroundStyle(.orange)
                                 .fontWeight(.medium)
-                            Text("Cookie 已失效，需要重新登录")
+                            Text("请在浏览器中登录 OpenCode")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
-                            Button("重新登录") {
+                            Button("在 App 内登录") {
                                 let url = UserDefaults.standard.string(forKey: "openCodeWorkspaceURL") ?? ""
-                                OpenCodeService.shared.showLoginWindow(urlString: url) {
-                                    Task { await dataStore.refreshAll() }
+                                OpenCodeService.shared.showLoginWindow(urlString: url) { success in
+                                    if success {
+                                        Task { await dataStore.refreshAll() }
+                                    }
                                 }
                             }
                             .buttonStyle(.bordered)
@@ -150,13 +152,15 @@ struct MenuBarView: View {
                             Label("需要登录", systemImage: "exclamationmark.triangle")
                                 .foregroundStyle(.orange)
                                 .fontWeight(.medium)
-                            Text("被重定向到了登录页")
+                            Text("请在浏览器中登录 OpenCode")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
-                            Button("重新登录") {
+                            Button("在 App 内登录") {
                                 let url = UserDefaults.standard.string(forKey: "openCodeWorkspaceURL") ?? ""
-                                OpenCodeService.shared.showLoginWindow(urlString: url) {
-                                    Task { await dataStore.refreshAll() }
+                                OpenCodeService.shared.showLoginWindow(urlString: url) { success in
+                                    if success {
+                                        Task { await dataStore.refreshAll() }
+                                    }
                                 }
                             }
                             .buttonStyle(.bordered)
@@ -168,16 +172,18 @@ struct MenuBarView: View {
                             Label("数据获取失败", systemImage: "xmark.circle.fill")
                                 .foregroundStyle(.red)
                                 .fontWeight(.medium)
-                            Text("RPC 和页面抓取均失败，可能需要重新登录")
+                            Text("请在登录窗口中使用 GitHub 或 Google 登录")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
-                            Button("重新登录") {
+                            Button("在 App 内登录") {
                                 let url = UserDefaults.standard.string(forKey: "openCodeWorkspaceURL") ?? ""
-                                OpenCodeService.shared.showLoginWindow(urlString: url) {
-                                    Task { await dataStore.refreshAll() }
+                                OpenCodeService.shared.showLoginWindow(urlString: url) { success in
+                                    if success {
+                                        Task { await dataStore.refreshAll() }
+                                    }
                                 }
                             }
-                            .buttonStyle(.bordered)
+                            .buttonStyle(.borderedProminent)
                             .controlSize(.small)
                         }
                         
