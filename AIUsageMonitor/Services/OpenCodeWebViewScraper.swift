@@ -465,7 +465,7 @@ class OpenCodeWebViewScraper: NSObject, WKNavigationDelegate, WKScriptMessageHan
                     
                     result.needsLogin = false;
                     result.url = window.location.href;
-                    result.hasUsageData = bodyText.includes('%') || remaining !== null || plan !== null;
+                    result.hasUsageData = bodyText.includes('%') || (result.apiData && (result.apiData.remaining !== undefined || result.apiData.plan !== undefined));
                     
                     try {
                         window.webkit.messageHandlers.openCodeData.postMessage({
