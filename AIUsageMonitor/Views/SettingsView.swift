@@ -123,7 +123,7 @@ struct SettingsView: View {
                             .textFieldStyle(.roundedBorder)
                         
                         VStack(alignment: .leading, spacing: 6) {
-                            Text("💡 在浏览器中登录 OpenCode（推荐使用 Safari）：")
+                            Text("💡 在 App 内登录 OpenCode（使用 GitHub / Google 账号）：")
                                 .font(.caption2)
                                 .foregroundColor(.secondary)
                             
