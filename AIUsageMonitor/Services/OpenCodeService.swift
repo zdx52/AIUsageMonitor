@@ -45,8 +45,18 @@ class OpenCodeService: NSObject, NSWindowDelegate {
             )
         }
         
-        // 3. RPC 失败，回退到 WKWebView 页面抓取
-        print("⚠️ OpenCode RPC 失败，回退到页面抓取")
+        // 3. RPC 失败，快速检查页面是否为登录页
+        print("⚠️ OpenCode RPC 失败，快速检查登录状态")
+        let isLogin = await checkIsLoginPage(urlString: urlString)
+        
+        if isLogin == true {
+            // 是登录页 → cookie 过期
+            return OpenCodeUsage(needsLogin: true, status: .noCookies)
+        }
+        
+        // 4. 不是登录页（已登录）但 RPC 失败 → 用 WebView 抓取数据（10 秒超时）
+        print("⚠️ OpenCode 已登录但 RPC 失败，尝试 WebView 抓取")
+        webScraper.defaultTimeout = 10
         let webViewResult = await webScraper.fetchUsageViaWebView(urlString: urlString)
         
         if let result = webViewResult {
@@ -55,15 +65,72 @@ class OpenCodeService: NSObject, NSWindowDelegate {
             if hasData {
                 var r = result
                 r.status = .success
+                print("✅ OpenCode WebView 抓取成功")
                 return r
             }
-            var r = result
-            r.status = .fetchFailed
-            return r
         }
         
         print("❌ OpenCode 所有获取方式均失败")
         return OpenCodeUsage(needsLogin: true, status: .fetchFailed)
+    }
+    
+    // MARK: - 快速登录页检测（WKWebView 8 秒超时）
+    
+    /// 轻量 WKWebView 导航代理，仅用于检查页面是否为登录页
+    class QuickLoginChecker: NSObject, WKNavigationDelegate {
+        var onResult: ((Bool) -> Void)?
+        var done = false
+        
+        func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+            guard !done else { return }
+            done = true
+            let url = webView.url?.absoluteString ?? ""
+            let isLogin = url.contains("/auth/") || url.contains("/login") || url.contains("/signin")
+            print("📡 OpenCode 页面检查: \(url.prefix(80)) → isLogin=\(isLogin)")
+            webView.stopLoading()
+            onResult?(isLogin)
+        }
+        
+        func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+            guard !done else { return }
+            done = true
+            onResult?(false)
+        }
+        
+        func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+            guard !done else { return }
+            done = true
+            onResult?(false)
+        }
+    }
+    
+    private func checkIsLoginPage(urlString: String) async -> Bool? {
+        guard let url = URL(string: urlString) else { return nil }
+        return await withCheckedContinuation { continuation in
+            DispatchQueue.main.async {
+                let config = WKWebViewConfiguration()
+                config.websiteDataStore = WKWebsiteDataStore.default()
+                let webView = WKWebView(frame: .zero, configuration: config)
+                webView.customUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15"
+                
+                let checker = QuickLoginChecker()
+                checker.onResult = { isLogin in
+                    continuation.resume(returning: isLogin)
+                }
+                webView.navigationDelegate = checker
+                
+                // 8 秒超时
+                DispatchQueue.main.asyncAfter(deadline: .now() + 8) {
+                    if !checker.done {
+                        checker.done = true
+                        webView.stopLoading()
+                        continuation.resume(returning: nil)
+                    }
+                }
+                
+                webView.load(URLRequest(url: url))
+            }
+        }
     }
     
     // MARK: - WKWebView 登录窗口
