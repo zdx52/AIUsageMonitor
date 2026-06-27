@@ -13,7 +13,7 @@
   <img alt="License" src="https://img.shields.io/github/license/zdx52/AIUsageMonitor">
   <img alt="Swift" src="https://img.shields.io/badge/swift-5.0-orange">
   <img alt="macOS" src="https://img.shields.io/badge/platform-macOS-lightgray">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.3.3-blue">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.3.4-blue">
 </p>
 
 AIUsageMonitor 是一个 macOS 菜单栏轻量级应用，实时监控 DeepSeek、Tavily 和 OpenCode GO 的 API 用量与余额。通过菜单栏常驻，随时掌握 AI 账户状态，支持自动刷新和手动刷新。
@@ -121,6 +121,25 @@ open .build/release/AIUsageMonitor
 ```
 
 或使用 Xcode 打开 `AIUsageMonitor.xcodeproj` 构建运行。
+
+## 切换日志
+
+### v1.3.4
+
+- 🐛 **Timer 不自动刷新** — Timer 注册到 `.common` RunLoop Mode，菜单打开时也能触发
+- 🐛 **OpenCode 数据获取** — 改为浏览器登录 + 检测完成按钮，移除不稳定的内嵌 WebView 登录
+- 🐛 **OpenCode RPC 哈希过期** — 哈希已废弃（HTTP 500），改用 URLSession 直连页面 + WKWebView 抓取双路径
+- 🐛 **Tavily 限流处理** — 检测 API 限流，保留缓存数据，显示友好提示而非「请配置 Key」
+- 🐛 **登录窗口被遮挡** — 移除登录按钮中误调的 SettingsWindowController.show
+- 🐛 **字符串插值 bug** — 修复 patch 引入的 `\\(tv.xxx)` 显示为文本的问题
+- ⚡ **WKWebView 预创建** — 预创建并复用 WKWebView，登录窗口弹出更快
+- 🧹 **登录流程简化** — 设置面板同步更新为浏览器登录流程
+
+### v1.3.3
+
+- 🐛 **Timer 自动刷新不触发** — 菜单打开时 RunLoop 切换到 `.eventTracking` 模式导致 Timer 被跳过。已将 Timer 注册到 `.common` mode，菜单打开时也能正常触发。
+- 🐛 **OpenCode 数据获取卡死刷新** — OpenCode fetch 流程（RPC + WKWebView）可能耗时 20s+，阻塞整个 `refreshAll()`。已用 `withTaskGroup` 加超时兜底。
+- 🔧 `.gitignore` 扩展 `*.dmg` 通配符
 
 ## 许可证
 
