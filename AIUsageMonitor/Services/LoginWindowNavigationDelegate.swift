@@ -9,6 +9,15 @@ class LoginWindowNavigationDelegate: NSObject, WKNavigationDelegate {
     var onLoginFailed: (() -> Void)?
     private var loginCheckTimer: Timer?
     private var webView: WKWebView?
+    var loginAlreadyDetected = false  // 防止 windowWillClose 重复回调
+    
+    func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+        if let url = webView.url?.absoluteString {
+            print("🌐 OpenCode 开始加载: \(url)")
+        }
+        // 更新窗口标题为正在加载
+        webView.window?.title = "OpenCode 登录 - 加载中..."
+    }
     
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         self.webView = webView
@@ -32,12 +41,22 @@ class LoginWindowNavigationDelegate: NSObject, WKNavigationDelegate {
     
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
         print("❌ OpenCode 子页面加载失败: \(error.localizedDescription)")
+        webView.window?.title = "OpenCode 登录 - 加载失败: \(error.localizedDescription)"
         // 不中断登录流程，子页面加载失败不影响整体 OAuth 流程
     }
     
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
         print("❌ OpenCode 页面跳转失败: \(error.localizedDescription)")
-        // OAuth 登录过程中 auth 服务的临时跳转失败是正常的，不中断流程
+        webView.window?.title = "OpenCode 登录 - 连接失败: \(error.localizedDescription)"
+        // 在页面中显示错误和浏览器备选方案
+        let errorHTML = """
+        <html><body style="font-family:-apple-system;padding:40px;text-align:center;background:#f5f5f5">
+        <h2 style="color:#888">⚠️ 页面加载失败</h2>
+        <p style="color:#666;font-size:14px">\(error.localizedDescription)</p>
+        <p style="color:#999;font-size:12px;margin-top:20px">请尝试在系统浏览器中登录</p>
+        </body></html>
+        """
+        webView.loadHTMLString(errorHTML, baseURL: nil)
     }
     
     private func checkLoginStatus(webView: WKWebView) {
@@ -108,6 +127,7 @@ class LoginWindowNavigationDelegate: NSObject, WKNavigationDelegate {
     }
     
     private func onLoginDetected(webView: WKWebView) {
+        loginAlreadyDetected = true
         cleanup()
         
         if let window = webView.window {
