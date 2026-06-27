@@ -40,3 +40,10 @@ Package.resolved
 
 # Test files
 test_output.log
+
+# Build artifacts
+AIUsageMonitor.app/
+AIUsageMonitor.dmg
+
+# Hermes agent
+.hermes/

@@ -12,7 +12,6 @@ struct SettingsView: View {
     @State private var openCodeURL: String = ""
     @State private var saveMessage: String = ""
     @State private var showMessage: Bool = false
-    @State private var isLoggingIn: Bool = false
     @State private var loginMessage: String = ""
     @State private var showDeepSeek: Bool = true
     @State private var showTavily: Bool = true
@@ -128,38 +127,64 @@ struct SettingsView: View {
                                 .foregroundColor(.secondary)
                             
                             Button("在 App 内登录") {
-                                isLoggingIn = true
+                                dataStore.isOpenCodeLoggingIn = true
                                 loginMessage = ""
                                 UserDefaults.standard.set(openCodeURL, forKey: "openCodeWorkspaceURL")
                                 OpenCodeService.shared.showLoginWindow(urlString: openCodeURL) { success in
                                     DispatchQueue.main.async {
-                                        isLoggingIn = false
                                         if success {
                                             loginMessage = "✅ 登录成功！数据已刷新"
-                                            Task { await dataStore.refreshAll() }
+                                            Task {
+                                                try? await Task.sleep(nanoseconds: 1_000_000_000)
+                                                await dataStore.refreshAll()
+                                            }
                                         } else {
                                             loginMessage = "⚠️ 登录取消或失败，请重试"
                                         }
+                                        dataStore.isOpenCodeLoggingIn = false
                                     }
                                 }
                             }
-                            .disabled(openCodeURL.isEmpty || isLoggingIn)
+                            .disabled(openCodeURL.isEmpty || dataStore.isOpenCodeLoggingIn)
                             .buttonStyle(.bordered)
                             
-                            if isLoggingIn {
-                                HStack(spacing: 6) {
+                            if dataStore.isOpenCodeLoggingIn {
+                                HStack(spacing: 8) {
                                     ProgressView()
                                         .scaleEffect(0.6)
-                                    Text("登录窗口中...")
+                                    Text("请在登录窗口中完成 GitHub/Google 登录...")
                                         .font(.caption)
                                         .foregroundColor(.secondary)
                                 }
+                                
+                                Button("✅ 我已登录完成（手动检测）") {
+                                    Task {
+                                        await dataStore.refreshAll()
+                                        if dataStore.openCodeStatus == .success {
+                                            loginMessage = "✅ 登录成功！数据已刷新"
+                                            dataStore.isOpenCodeLoggingIn = false
+                                            OpenCodeService.shared.closeLoginWindow()
+                                        } else {
+                                            loginMessage = "⚠️ 未检测到登录状态，请确认已在窗口中完成登录"
+                                        }
+                                    }
+                                }
+                                .buttonStyle(.borderedProminent)
+                                .controlSize(.small)
+                                
+                                Button("取消") {
+                                    dataStore.isOpenCodeLoggingIn = false
+                                    loginMessage = ""
+                                    OpenCodeService.shared.closeLoginWindow()
+                                }
+                                .buttonStyle(.bordered)
+                                .controlSize(.small)
                             }
                             
                             if !loginMessage.isEmpty {
                                 Text(loginMessage)
                                     .font(.caption)
-                                    .foregroundColor(loginMessage.contains("✅") ? .green : .secondary)
+                                    .foregroundColor(loginMessage.contains("✅") ? .green : .orange)
                             }
                         }
                     }
@@ -226,6 +251,4 @@ struct SettingsView: View {
             await dataStore.refreshAll()
         }
     }
-    
-    // startLogin() 已移除，改用「在浏览器中登录」+「检查登录状态」
 }

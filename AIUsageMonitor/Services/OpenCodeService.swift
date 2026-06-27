@@ -69,49 +69,48 @@ class OpenCodeService: NSObject, NSWindowDelegate {
     // MARK: - WKWebView 登录窗口
     
     func showLoginWindow(urlString: String, completion: @escaping (Bool) -> Void) {
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            
-            // 关闭已有窗口
-            if let existingWindow = self.fetchLoginWindow {
-                existingWindow.close()
-                self.fetchLoginWindow = nil
-            }
-            
-            let config = WKWebViewConfiguration()
-            config.websiteDataStore = WKWebsiteDataStore.default()
-            
-            let webView = WKWebView(frame: NSRect(x: 0, y: 0, width: 900, height: 700), configuration: config)
-            
-            // 登录成功或失败时都回调
-            self.loginDelegate.onLoginSuccess = {
-                self.fetchLoginWindow = nil
-                completion(true)
-            }
-            self.loginDelegate.onLoginFailed = {
-                self.fetchLoginWindow = nil
-                completion(false)
-            }
-            webView.navigationDelegate = self.loginDelegate
-            
-            let window = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 900, height: 700),
-                styleMask: [.titled, .closable, .resizable, .miniaturizable],
-                backing: .buffered,
-                defer: false
-            )
-            window.title = "OpenCode 登录"
-            window.contentView = webView
-            window.center()
-            window.makeKeyAndOrderFront(nil)
-            window.isReleasedWhenClosed = false
-            window.delegate = self
-            
-            self.fetchLoginWindow = window
-            
-            if let url = URL(string: urlString) {
-                webView.load(URLRequest(url: url))
-            }
+        // 关闭已有窗口
+        if let existingWindow = fetchLoginWindow {
+            existingWindow.close()
+            fetchLoginWindow = nil
+        }
+        
+        let config = WKWebViewConfiguration()
+        config.websiteDataStore = WKWebsiteDataStore.default()
+        // 设置桌面版 User Agent，部分站点需要
+        let webView = WKWebView(frame: NSRect(x: 0, y: 0, width: 900, height: 700), configuration: config)
+        webView.customUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15"
+        
+        // 登录成功或失败时都回调
+        loginDelegate.onLoginSuccess = { [weak self] in
+            self?.fetchLoginWindow = nil
+            completion(true)
+        }
+        loginDelegate.onLoginFailed = { [weak self] in
+            self?.fetchLoginWindow = nil
+            completion(false)
+        }
+        webView.navigationDelegate = loginDelegate
+        
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 900, height: 700),
+            styleMask: [.titled, .closable, .resizable, .miniaturizable],
+            backing: .buffered,
+            defer: false
+        )
+        window.title = "OpenCode 登录"
+        window.contentView = webView
+        window.center()
+        // 菜单栏应用(.accessory)需要显式激活才能显示窗口
+        NSApp.activate(ignoringOtherApps: true)
+        window.makeKeyAndOrderFront(nil)
+        window.isReleasedWhenClosed = false
+        window.delegate = self
+        
+        fetchLoginWindow = window
+        
+        if let url = URL(string: urlString) {
+            webView.load(URLRequest(url: url))
         }
     }
     
@@ -122,10 +121,20 @@ class OpenCodeService: NSObject, NSWindowDelegate {
               window === self.fetchLoginWindow else { return }
         print("🔒 OpenCode 登录窗口被用户关闭")
         self.fetchLoginWindow = nil
-        self.loginDelegate.onLoginFailed?()
+        // 登录已自动检测成功时，不触发失败回调
+        if !loginDelegate.loginAlreadyDetected {
+            self.loginDelegate.onLoginFailed?()
+        }
     }
     
     // MARK: - 在系统浏览器中打开（备用）
+    
+    func closeLoginWindow() {
+        if let window = fetchLoginWindow {
+            window.close()
+        }
+        fetchLoginWindow = nil
+    }
     
     func openInBrowser(urlString: String) {
         guard let url = URL(string: urlString) else { return }

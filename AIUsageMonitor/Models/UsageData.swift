@@ -32,6 +32,14 @@ struct DeepSeekUsage: Equatable {
     let currency: String
 }
 
+// MARK: - 服务健康度
+
+enum ServiceHealth: Comparable {
+    case healthy
+    case warning
+    case critical
+}
+
 @MainActor
 class DataStore: ObservableObject {
     @Published var menuBarTitle: String = "⏳ 加载中..."
@@ -43,6 +51,8 @@ class DataStore: ObservableObject {
     @Published var lastRefreshTime: Date?
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
+    @Published var healthLevel: ServiceHealth = .healthy
+    @Published var isOpenCodeLoggingIn = false
     
     func refreshAll() async {
         isLoading = true
@@ -92,6 +102,7 @@ class DataStore: ObservableObject {
         self.lastRefreshTime = Date()
         self.isLoading = false
         
+        self.updateHealthLevel()
         self.updateMenuBarTitle()
     }
     
@@ -122,6 +133,41 @@ class DataStore: ObservableObject {
         }
         return await OpenCodeService.shared.fetchUsage(urlString: url)
     }
+    
+    private func updateHealthLevel() {
+        // Critical 优先检查
+        if let ds = deepSeekBalance, ds.totalBalance < 5 {
+            healthLevel = .critical
+            return
+        }
+        if openCodeStatus == .fetchFailed {
+            healthLevel = .critical
+            return
+        }
+        
+        // Warning 检查
+        if let ds = deepSeekBalance, ds.totalBalance < 20 {
+            healthLevel = .warning
+            return
+        }
+        if let tv = tavilyUsage, tv.monthlyLimit > 0,
+           Double(tv.remaining) / Double(tv.monthlyLimit) < 0.25 {
+            healthLevel = .warning
+            return
+        }
+        if let oc = openCodeUsage, let pct = oc.rpcUsagePercent, pct > 80 {
+            healthLevel = .warning
+            return
+        }
+        if openCodeStatus == .noCookies || openCodeStatus == .needsLogin {
+            healthLevel = .warning
+            return
+        }
+        
+        // 默认健康
+        healthLevel = .healthy
+    }
+    
     private func updateMenuBarTitle() {
         let ud = UserDefaults.standard
         var parts: [String] = []
