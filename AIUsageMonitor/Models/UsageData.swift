@@ -127,11 +127,26 @@ class DataStore: ObservableObject {
     }
 
     private func fetchOpenCodeUsage() async -> OpenCodeUsage? {
-        guard let url = UserDefaults.standard.string(forKey: "openCodeWorkspaceURL"),
-              !url.isEmpty else {
+        return await withTaskGroup(of: OpenCodeUsage?.self) { group in
+            group.addTask {
+                guard let url = UserDefaults.standard.string(forKey: "openCodeWorkspaceURL"),
+                      !url.isEmpty else {
+                    return nil
+                }
+                return await OpenCodeService.shared.fetchUsage(urlString: url)
+            }
+            // 20 秒超时兜底，避免 WKWebView/RPC 卡死整个刷新
+            group.addTask {
+                try? await Task.sleep(nanoseconds: 20_000_000_000)
+                return nil
+            }
+            
+            if let result = await group.next() {
+                group.cancelAll()
+                return result
+            }
             return nil
         }
-        return await OpenCodeService.shared.fetchUsage(urlString: url)
     }
     
     private func updateHealthLevel() {

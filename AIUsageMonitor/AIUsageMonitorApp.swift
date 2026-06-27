@@ -74,6 +74,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 await self?.dataStore.refreshAll()
             }
         }
+        // 添加到 .common mode，确保菜单弹出时（.eventTracking）Timer 也能触发
+        RunLoop.main.add(refreshTimer!, forMode: .common)
     }
     
     @objc func userDefaultsDidChange() {
