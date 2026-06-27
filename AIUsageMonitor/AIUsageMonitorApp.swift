@@ -28,8 +28,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var refreshTimer: Timer?
     lazy var statusBarIcon: NSImage = {
         let img = NSImage(systemSymbolName: "chart.bar.fill", accessibilityDescription: nil) ?? NSImage()
-        let config = NSImage.SymbolConfiguration(paletteColors: [.systemGreen])
-        return img.withSymbolConfiguration(config) ?? img
+        img.isTemplate = true
+        return img
     }()
     
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -81,21 +81,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     func updateStatusBarIcon(health: ServiceHealth) {
-        let color: NSColor
-        switch health {
-        case .critical:
-            color = .systemRed
-        case .warning:
-            color = .systemOrange
-        case .healthy:
-            color = .systemGreen
-        }
-        
-        guard let img = NSImage(systemSymbolName: "chart.bar.fill", accessibilityDescription: nil),
-              let colored = img.withSymbolConfiguration(.init(paletteColors: [color])) else {
+        guard let img = NSImage(systemSymbolName: "chart.bar.fill", accessibilityDescription: nil) else {
             return
         }
-        statusBarIcon = colored
+        
+        switch health {
+        case .critical:
+            guard let colored = img.withSymbolConfiguration(.init(paletteColors: [.systemRed])) else { return }
+            statusBarIcon = colored
+        case .warning:
+            guard let colored = img.withSymbolConfiguration(.init(paletteColors: [.systemOrange])) else { return }
+            statusBarIcon = colored
+        case .healthy:
+            // 使用模板图标，系统自动适配浅色/深色菜单栏
+            img.isTemplate = true
+            statusBarIcon = img
+        }
     }
     
     func applicationWillTerminate(_ notification: Notification) {

@@ -8,7 +8,7 @@ class OpenCodeWebViewScraper: NSObject, WKNavigationDelegate, WKScriptMessageHan
     private var fetchWebView: WKWebView?
     var fetchCompletion: ((OpenCodeUsage?) -> Void)?
     private var fetchTimeoutTimer: Timer?
-    let defaultTimeout: TimeInterval = 30
+    var defaultTimeout: TimeInterval = 30
     var capturedAPIData: [String: [String: Any]] = [:]
     var capturedPageText: String = ""
     private var extractionAttemptCount = 0
