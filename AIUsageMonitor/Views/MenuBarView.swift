@@ -132,19 +132,26 @@ struct MenuBarView: View {
                             Label("登录已过期", systemImage: "exclamationmark.triangle")
                                 .foregroundStyle(.orange)
                                 .fontWeight(.medium)
-                            Text("请在浏览器中登录 OpenCode")
+                            Text("请在登录窗口中完成 GitHub/Google 登录")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                             Button("在 App 内登录") {
                                 let url = UserDefaults.standard.string(forKey: "openCodeWorkspaceURL") ?? ""
+                                dataStore.isOpenCodeLoggingIn = true
+                                SettingsWindowController.shared.show(with: dataStore)
                                 OpenCodeService.shared.showLoginWindow(urlString: url) { success in
                                     if success {
-                                        Task { await dataStore.refreshAll() }
+                                        Task {
+                                            try? await Task.sleep(nanoseconds: 1_000_000_000)
+                                            await dataStore.refreshAll()
+                                        }
                                     }
+                                    dataStore.isOpenCodeLoggingIn = false
                                 }
                             }
                             .buttonStyle(.bordered)
                             .controlSize(.small)
+                            .disabled(dataStore.isOpenCodeLoggingIn)
                         }
                         
                     case .needsLogin:
@@ -152,19 +159,26 @@ struct MenuBarView: View {
                             Label("需要登录", systemImage: "exclamationmark.triangle")
                                 .foregroundStyle(.orange)
                                 .fontWeight(.medium)
-                            Text("请在浏览器中登录 OpenCode")
+                            Text("请在登录窗口中完成 GitHub/Google 登录")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                             Button("在 App 内登录") {
                                 let url = UserDefaults.standard.string(forKey: "openCodeWorkspaceURL") ?? ""
+                                dataStore.isOpenCodeLoggingIn = true
+                                SettingsWindowController.shared.show(with: dataStore)
                                 OpenCodeService.shared.showLoginWindow(urlString: url) { success in
                                     if success {
-                                        Task { await dataStore.refreshAll() }
+                                        Task {
+                                            try? await Task.sleep(nanoseconds: 1_000_000_000)
+                                            await dataStore.refreshAll()
+                                        }
                                     }
+                                    dataStore.isOpenCodeLoggingIn = false
                                 }
                             }
                             .buttonStyle(.bordered)
                             .controlSize(.small)
+                            .disabled(dataStore.isOpenCodeLoggingIn)
                         }
                         
                     case .fetchFailed:
@@ -177,14 +191,21 @@ struct MenuBarView: View {
                                 .foregroundStyle(.secondary)
                             Button("在 App 内登录") {
                                 let url = UserDefaults.standard.string(forKey: "openCodeWorkspaceURL") ?? ""
+                                dataStore.isOpenCodeLoggingIn = true
+                                SettingsWindowController.shared.show(with: dataStore)
                                 OpenCodeService.shared.showLoginWindow(urlString: url) { success in
                                     if success {
-                                        Task { await dataStore.refreshAll() }
+                                        Task {
+                                            try? await Task.sleep(nanoseconds: 1_000_000_000)
+                                            await dataStore.refreshAll()
+                                        }
                                     }
+                                    dataStore.isOpenCodeLoggingIn = false
                                 }
                             }
                             .buttonStyle(.borderedProminent)
                             .controlSize(.small)
+                            .disabled(dataStore.isOpenCodeLoggingIn)
                         }
                         
                     case .success:

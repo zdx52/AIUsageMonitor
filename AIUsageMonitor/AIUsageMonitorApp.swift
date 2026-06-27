@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import Combine
 
 @main
 struct AIUsageMonitorApp: App {
@@ -23,9 +24,12 @@ struct AIUsageMonitorApp: App {
 @MainActor
 class AppDelegate: NSObject, NSApplicationDelegate {
     let dataStore = DataStore()
+    var cancellables = Set<AnyCancellable>()
     var refreshTimer: Timer?
     lazy var statusBarIcon: NSImage = {
-        return NSImage(systemSymbolName: "chart.bar.fill", accessibilityDescription: nil) ?? NSImage()
+        let img = NSImage(systemSymbolName: "chart.bar.fill", accessibilityDescription: nil) ?? NSImage()
+        let config = NSImage.SymbolConfiguration(paletteColors: [.systemGreen])
+        return img.withSymbolConfiguration(config) ?? img
     }()
     
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -39,6 +43,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             name: UserDefaults.didChangeNotification,
             object: nil
         )
+        
+        // 订阅健康度变化，动态更新图标颜色
+        dataStore.$healthLevel
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] level in
+                self?.updateStatusBarIcon(health: level)
+            }
+            .store(in: &cancellables)
         
         Task {
             await dataStore.refreshAll()
@@ -66,6 +78,24 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     @objc func userDefaultsDidChange() {
         setupRefreshTimer()
+    }
+    
+    func updateStatusBarIcon(health: ServiceHealth) {
+        let color: NSColor
+        switch health {
+        case .critical:
+            color = .systemRed
+        case .warning:
+            color = .systemOrange
+        case .healthy:
+            color = .systemGreen
+        }
+        
+        guard let img = NSImage(systemSymbolName: "chart.bar.fill", accessibilityDescription: nil),
+              let colored = img.withSymbolConfiguration(.init(paletteColors: [color])) else {
+            return
+        }
+        statusBarIcon = colored
     }
     
     func applicationWillTerminate(_ notification: Notification) {
