@@ -21,8 +21,17 @@ class TavilyService {
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
             
-            guard let httpResponse = response as? HTTPURLResponse,
-                  httpResponse.statusCode == 200 else {
+            guard let httpResponse = response as? HTTPURLResponse else {
+                return nil
+            }
+            
+            // 检测限流
+            if httpResponse.statusCode == 429 || httpResponse.statusCode != 200 {
+                if let body = String(data: data, encoding: .utf8),
+                   body.contains("excessive requests") || body.contains("rate limit") {
+                    print("⚠️ Tavily API 限流: \\(body.prefix(100))")
+                    return TavilyUsage(plan: "", monthlyLimit: 0, creditsUsed: 0, remaining: 0, createdAt: "", isRateLimited: true)
+                }
                 return nil
             }
             

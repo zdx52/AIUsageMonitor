@@ -53,6 +53,8 @@ class DataStore: ObservableObject {
     @Published var errorMessage: String?
     @Published var healthLevel: ServiceHealth = .healthy
     @Published var isOpenCodeLoggingIn = false
+    @Published var tavilyRateLimited = false
+    private var lastSuccessfulTavily: TavilyUsage?  // 限流时保留最后成功数据
     
     func refreshAll() async {
         isLoading = true
@@ -79,7 +81,26 @@ class DataStore: ObservableObject {
             self.deepSeekBalance = nil
         }
         
-        self.tavilyUsage = tavilyData
+        if let tvData = tavilyData {
+            if tvData.isRateLimited {
+                // 限流时保留上次成功数据（如有），标记限流状态
+                self.tavilyRateLimited = true
+                if let cached = lastSuccessfulTavily {
+                    self.tavilyUsage = cached
+                } else {
+                    self.tavilyUsage = nil
+                }
+            } else {
+                self.tavilyUsage = tvData
+                self.lastSuccessfulTavily = tvData
+                self.tavilyRateLimited = false
+            }
+        } else if lastSuccessfulTavily != nil {
+            self.tavilyRateLimited = true
+        } else {
+            self.tavilyUsage = nil
+            self.tavilyRateLimited = false
+        }
         
         // OpenCode
         if let oc = openCodeData {
@@ -135,9 +156,9 @@ class DataStore: ObservableObject {
                 }
                 return await OpenCodeService.shared.fetchUsage(urlString: url)
             }
-            // 20 秒超时兜底，避免 WKWebView/RPC 卡死整个刷新
+            // 15 秒超时兜底，避免 WKWebView 卡死整个刷新
             group.addTask {
-                try? await Task.sleep(nanoseconds: 20_000_000_000)
+                try? await Task.sleep(nanoseconds: 15_000_000_000)
                 return nil
             }
             

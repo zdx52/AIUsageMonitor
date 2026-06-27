@@ -122,60 +122,41 @@ struct SettingsView: View {
                             .textFieldStyle(.roundedBorder)
                         
                         VStack(alignment: .leading, spacing: 6) {
-                            Text("💡 在 App 内登录 OpenCode（使用 GitHub / Google 账号）：")
+                            Text("💡 登录 OpenCode（使用 GitHub / Google 账号）：")
                                 .font(.caption2)
                                 .foregroundColor(.secondary)
                             
-                            Button("在 App 内登录") {
-                                dataStore.isOpenCodeLoggingIn = true
-                                loginMessage = ""
-                                UserDefaults.standard.set(openCodeURL, forKey: "openCodeWorkspaceURL")
-                                OpenCodeService.shared.showLoginWindow(urlString: openCodeURL) { success in
-                                    DispatchQueue.main.async {
-                                        if success {
-                                            loginMessage = "✅ 登录成功！数据已刷新"
-                                            Task {
-                                                try? await Task.sleep(nanoseconds: 1_000_000_000)
-                                                await dataStore.refreshAll()
+                            HStack(spacing: 8) {
+                                Button("🔐 快速登录") {
+                                    UserDefaults.standard.set(openCodeURL, forKey: "openCodeWorkspaceURL")
+                                    OpenCodeService.shared.showLoginWindow(urlString: openCodeURL) { success in
+                                        DispatchQueue.main.async {
+                                            if success {
+                                                loginMessage = "✅ 登录成功！数据已刷新"
+                                                Task {
+                                                    try? await Task.sleep(nanoseconds: 1_000_000_000)
+                                                    await dataStore.refreshAll()
+                                                }
+                                            } else {
+                                                loginMessage = "⚠️ 登录取消"
                                             }
-                                        } else {
-                                            loginMessage = "⚠️ 登录取消或失败，请重试"
-                                        }
-                                        dataStore.isOpenCodeLoggingIn = false
-                                    }
-                                }
-                            }
-                            .disabled(openCodeURL.isEmpty || dataStore.isOpenCodeLoggingIn)
-                            .buttonStyle(.bordered)
-                            
-                            if dataStore.isOpenCodeLoggingIn {
-                                HStack(spacing: 8) {
-                                    ProgressView()
-                                        .scaleEffect(0.6)
-                                    Text("请在登录窗口中完成 GitHub/Google 登录...")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
-                                
-                                Button("✅ 我已登录完成（手动检测）") {
-                                    Task {
-                                        await dataStore.refreshAll()
-                                        if dataStore.openCodeStatus == .success {
-                                            loginMessage = "✅ 登录成功！数据已刷新"
-                                            dataStore.isOpenCodeLoggingIn = false
-                                            OpenCodeService.shared.closeLoginWindow()
-                                        } else {
-                                            loginMessage = "⚠️ 未检测到登录状态，请确认已在窗口中完成登录"
                                         }
                                     }
                                 }
+                                .disabled(openCodeURL.isEmpty)
                                 .buttonStyle(.borderedProminent)
                                 .controlSize(.small)
                                 
-                                Button("取消") {
-                                    dataStore.isOpenCodeLoggingIn = false
-                                    loginMessage = ""
-                                    OpenCodeService.shared.closeLoginWindow()
+                                Button("🌐 浏览器") {
+                                    UserDefaults.standard.set(openCodeURL, forKey: "openCodeWorkspaceURL")
+                                    OpenCodeService.shared.openLoginInBrowser(urlString: openCodeURL)
+                                }
+                                .disabled(openCodeURL.isEmpty)
+                                .buttonStyle(.bordered)
+                                .controlSize(.small)
+                                
+                                Button("✅ 检测") {
+                                    Task { await dataStore.refreshAll() }
                                 }
                                 .buttonStyle(.bordered)
                                 .controlSize(.small)

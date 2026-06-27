@@ -38,4 +38,5 @@ struct TavilyUsage: Equatable {
     var creditsUsed: Int
     var remaining: Int
     let createdAt: String
+    var isRateLimited: Bool = false
 }
