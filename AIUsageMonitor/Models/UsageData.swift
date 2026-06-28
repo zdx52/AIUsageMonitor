@@ -53,6 +53,7 @@ class DataStore: ObservableObject {
     @Published var errorMessage: String?
     @Published var healthLevel: ServiceHealth = .healthy
     @Published var isOpenCodeLoggingIn = false
+    @Published var networkSpeed: NetworkSpeedMonitor.Speed?
     
     func refreshAll() async {
         isLoading = true
@@ -169,46 +170,26 @@ class DataStore: ObservableObject {
     }
     
     private func updateMenuBarTitle() {
-        let ud = UserDefaults.standard
-        var parts: [String] = []
-
-        if ud.bool(forKey: "showDeepSeek") {
-            if let ds = deepSeekBalance {
-                parts.append("DS ¥\(String(format: "%.1f", ds.totalBalance))")
-            } else {
-                parts.append("DS --")
-            }
+        // 菜单栏标题已由 updateNetworkSpeed() 专用于显示网速
+        // 不再覆盖 AI 数据到标题
+    }
+    
+    // MARK: - 网速更新
+    
+    func updateNetworkSpeed() {
+        let speed = NetworkSpeedMonitor.shared.getSpeed()
+        networkSpeed = speed
+        if let s = speed {
+            menuBarTitle = "↓\(shorten(s.download)) ↑\(shorten(s.upload))"
+        } else {
+            menuBarTitle = "⏳ 网速..."
         }
-
-        if ud.bool(forKey: "showTavily") {
-            if let tv = tavilyUsage {
-                parts.append("TV \(tv.remaining)/\(tv.monthlyLimit)")
-            } else {
-                parts.append("TV --")
-            }
-        }
-
-        if ud.bool(forKey: "showOpenCode") {
-            switch openCodeStatus {
-            case .notConfigured:
-                parts.append("OC --")
-            case .noCookies, .needsLogin:
-                parts.append("OC ⚠️")
-            case .fetchFailed:
-                parts.append("OC ❌")
-            case .success:
-                if let oc = openCodeUsage {
-                    if let pct = oc.rpcUsagePercent {
-                        parts.append("OC \(Int(pct))%")
-                    } else if let firstPct = oc.usagePercentages.first {
-                        parts.append("OC \(firstPct)%")
-                    } else {
-                        parts.append("OC ✅")
-                    }
-                }
-            }
-        }
-
-        menuBarTitle = parts.isEmpty ? "--" : parts.joined(separator: " | ")
+    }
+    
+    /// 缩短速度显示：≥1 MB/s 显示 M，<1 MB/s 显示 K
+    private func shorten(_ speed: String) -> String {
+        speed.replacingOccurrences(of: " MB/s", with: "M")
+             .replacingOccurrences(of: " KB/s", with: "K")
+             .replacingOccurrences(of: " ", with: "")
     }
 }

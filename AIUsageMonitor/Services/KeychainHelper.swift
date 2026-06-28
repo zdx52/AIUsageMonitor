@@ -12,17 +12,36 @@ class KeychainHelper {
             return
         }
         
-        // 先删除旧的
-        delete(key: key)
+        // 先删除所有旧条目（兼容多个 service name）
+        for name in [Self.serviceName, Bundle.main.bundleIdentifier ?? Self.serviceName] {
+            let delQuery: [String: Any] = [
+                kSecClass as String: kSecClassGenericPassword,
+                kSecAttrService as String: name,
+                kSecAttrAccount as String: key
+            ]
+            SecItemDelete(delQuery as CFDictionary)
+        }
         
-        // 使用固定 service name，避免 Bundle ID 变化导致 Keychain 读取失败
-        let query: [String: Any] = [
+        // 使用固定 service name 保存，并允许当前 App 无提示访问
+        var query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: Self.serviceName,
             kSecAttrAccount as String: key,
             kSecValueData as String: data,
-            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock
+            kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly
         ]
+        
+        // 添加访问控制：允许当前 App 无提示访问
+        var trustedApp: SecTrustedApplication?
+        if SecTrustedApplicationCreateFromPath(nil, &trustedApp) == errSecSuccess,
+           let app = trustedApp {
+            let accessList = [app] as CFArray
+            var access: SecAccess?
+            if SecAccessCreate(Self.serviceName as CFString, accessList, &access) == errSecSuccess,
+               let secAccess = access {
+                query[kSecAttrAccess as String] = secAccess
+            }
+        }
         
         let status = SecItemAdd(query as CFDictionary, nil)
         if status != errSecSuccess {
@@ -31,25 +50,34 @@ class KeychainHelper {
     }
     
     static func get(key: String) -> String? {
-        // 依次尝试多个 service name，兼容不同构建方式存的 Key
-        let namesToTry = [
-            Self.serviceName,                                                // 固定名
-            Bundle.main.bundleIdentifier ?? Self.serviceName                 // 当前 Bundle ID
+        // 优先使用固定 service name
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: Self.serviceName,
+            kSecAttrAccount as String: key,
+            kSecReturnData as String: true,
+            kSecMatchLimit as String: kSecMatchLimitOne
         ]
         
-        for name in namesToTry {
-            let query: [String: Any] = [
+        var result: AnyObject?
+        let status = SecItemCopyMatching(query as CFDictionary, &result)
+        
+        if status == errSecSuccess, let data = result as? Data {
+            return String(data: data, encoding: .utf8)
+        }
+        
+        // 兼容旧版：尝试用 Bundle ID 查找
+        if let bundleID = Bundle.main.bundleIdentifier {
+            let fallbackQuery: [String: Any] = [
                 kSecClass as String: kSecClassGenericPassword,
-                kSecAttrService as String: name,
+                kSecAttrService as String: bundleID,
                 kSecAttrAccount as String: key,
                 kSecReturnData as String: true,
                 kSecMatchLimit as String: kSecMatchLimitOne
             ]
-            
-            var result: AnyObject?
-            let status = SecItemCopyMatching(query as CFDictionary, &result)
-            
-            if status == errSecSuccess, let data = result as? Data {
+            var fallbackResult: AnyObject?
+            if SecItemCopyMatching(fallbackQuery as CFDictionary, &fallbackResult) == errSecSuccess,
+               let data = fallbackResult as? Data {
                 return String(data: data, encoding: .utf8)
             }
         }
