@@ -21,8 +21,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var refreshTimer: Timer?
     var networkSpeedTimer: Timer?
     var titleUpdateTimer: Timer?
+    var hindsightTimer: Timer?
     var statusItem: NSStatusItem?
     var popover: NSPopover?
+    var eventMonitor: Any?
     lazy var statusBarIcon: NSImage = {
         let img = NSImage(systemSymbolName: "chart.bar.fill", accessibilityDescription: nil) ?? NSImage()
         img.isTemplate = true
@@ -47,6 +49,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         popover?.contentViewController = NSHostingController(
             rootView: MenuBarView().environmentObject(dataStore)
         )
+        
+        // 全局事件监听：点击弹窗外部自动关闭
+        eventMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] event in
+            guard let self = self, let popover = self.popover, popover.isShown else { return }
+            popover.performClose(nil)
+        }
         
         // 每 3 秒更新网速和标题（用颜色表示健康状态）
         titleUpdateTimer = Timer.scheduledTimer(withTimeInterval: 3, repeats: true) { [weak self] _ in
@@ -87,6 +95,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.dataStore.updateNetworkSpeed()
             }
         }
+        
+        // Hindsight 跟随用户设置的刷新间隔
+        setupHindsightTimer()
+        
+        // 启动时立即获取一次 Hindsight 数据
+        Task { @MainActor in
+            await dataStore.refreshHindsight()
+        }
     }
     
     @objc func togglePopover() {
@@ -121,6 +137,23 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     @objc func userDefaultsDidChange() {
         setupRefreshTimer()
+        setupHindsightTimer()
+    }
+    
+    func setupHindsightTimer() {
+        hindsightTimer?.invalidate()
+        let interval: TimeInterval
+        if let saved = UserDefaults.standard.object(forKey: "refreshInterval") as? Double, saved >= 60 {
+            interval = saved
+        } else {
+            interval = 300
+        }
+        hindsightTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                await self?.dataStore.refreshHindsight()
+            }
+        }
+        RunLoop.main.add(hindsightTimer!, forMode: .common)
     }
     
     func updateStatusBarIcon(health: ServiceHealth) {
@@ -131,6 +164,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         refreshTimer?.invalidate()
         networkSpeedTimer?.invalidate()
         titleUpdateTimer?.invalidate()
+        hindsightTimer?.invalidate()
+        if let monitor = eventMonitor {
+            NSEvent.removeMonitor(monitor)
+        }
         NotificationCenter.default.removeObserver(self)
     }
 }

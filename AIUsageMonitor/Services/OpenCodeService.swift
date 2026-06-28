@@ -38,8 +38,48 @@ class OpenCodeService: NSObject, NSWindowDelegate {
             }
         }
         
-        // 有 cookie → 直接用 URLSession 请求页面 HTML（比 WKWebView 快且可靠）
-        if let result = await fetchPageViaURLSession(urlString: urlString, cookies: allCookies) {
+        // 并行获取：RPC 数据 + 页面文本
+        let workspaceID = rpcClient.extractWorkspaceID(from: urlString)
+        
+        async let rpcResult: OpenCodeRPCResponse? = tryRPC(workspaceID: workspaceID)
+        
+        async let pageResult: OpenCodeUsage? = fetchPageViaURLSession(urlString: urlString, cookies: allCookies)
+        
+        let rpcData = await rpcResult
+        let pageUsage = await pageResult
+        
+        // 优先使用 RPC 数据（含 resetInSec），再补充页面提取的百分比
+        if let rpc = rpcData, rpc.usagePercent != nil || rpc.remaining != nil || rpc.plan != nil || rpc.resetInSec != nil {
+            print("✅ OpenCode RPC: \(rpc)")
+            var usage = OpenCodeUsage(
+                useBalance: rpc.useBalance ?? false,
+                rpcUsagePercent: rpc.usagePercent,
+                rpcResetInSec: rpc.resetInSec,
+                rpcPlan: rpc.plan,
+                rpcTotalUsed: rpc.totalUsed,
+                rpcTotalLimit: rpc.totalLimit,
+                rpcRemaining: rpc.remaining
+            )
+            usage.status = .success
+            return usage
+        }
+        
+        // RPC 失败 → 用页面文本数据
+        if let page = pageUsage, page.rollingPercent != nil || page.weeklyPercent != nil || page.monthlyPercent != nil {
+            print("✅ OpenCode 页面文本数据: \(page)")
+            var result = page
+            result.status = .success
+            
+            // 如果页面文本没拿到 resetInSec，用轻量 WebView 补充（快速抓取 RPC）
+            if result.rpcResetInSec == nil || result.rpcResetInSec == 0 {
+                print("⏳ 补充: WebView 快速抓取 RPC 数据...")
+                webScraper.defaultTimeout = 8
+                if let webResult = await webScraper.fetchUsageViaWebView(urlString: urlString),
+                   let secs = webResult.rpcResetInSec, secs > 0 {
+                    result.rpcResetInSec = secs
+                    print("✅ WebView 补充 resetInSec: \(secs)秒")
+                }
+            }
             return result
         }
         
@@ -66,6 +106,14 @@ class OpenCodeService: NSObject, NSWindowDelegate {
         }
         
         return OpenCodeUsage(needsLogin: true, status: .fetchFailed)
+    }
+    
+    // MARK: - OpenCode 数据获取优化
+    
+    /// RPC 调用（仅当 workspaceID 有效时）
+    private func tryRPC(workspaceID: String?) async -> OpenCodeRPCResponse? {
+        guard let wid = workspaceID else { return nil }
+        return await rpcClient.callUsagePreviewRPC(workspaceID: wid)
     }
     
     // MARK: - URLSession 直接请求页面（不依赖 WKWebView）
@@ -105,8 +153,36 @@ class OpenCodeService: NSObject, NSWindowDelegate {
         print("📄 文本内容(前500): \(bodyText.prefix(500))")
         
         // 所有可能的匹配模式
-        if let usage = findUsageData(in: bodyText) {
+        if var usage = findUsageData(in: bodyText) {
+            print("📊 文本提取结果: rolling=\(usage.rollingPercent ?? -1) weekly=\(usage.weeklyPercent ?? -1) monthly=\(usage.monthlyPercent ?? -1) resetSec=\(usage.rpcResetInSec ?? -1)")
+            // 如果文本提取到了百分比但没倒计时，再从 HTML JSON 中补充
+            if usage.rpcResetInSec == nil || usage.rpcResetInSec == 0 {
+                if let jsonData = extractJSONFromHTML(html) {
+                    print("📊 JSON 数据: \(jsonData)")
+                    if let secs = jsonData["resetInSec"] as? Int, secs > 0 {
+                        usage.rpcResetInSec = secs
+                        print("📊 JSON 补充 resetInSec: \(secs)秒")
+                    }
+                }
+            }
             return usage
+        }
+        
+        // 文本解析失败 → 尝试 JSON
+        if let jsonData = extractJSONFromHTML(html) {
+            let pct = jsonData["usagePercent"] as? Double
+            let secs = jsonData["resetInSec"] as? Int
+            let remaining = jsonData["remaining"] as? Int
+            let plan = jsonData["plan"] as? String
+            if pct != nil || secs != nil || remaining != nil || plan != nil {
+                print("📊 JSON 直接解析成功")
+                return OpenCodeUsage(
+                    rpcUsagePercent: pct,
+                    rpcResetInSec: secs,
+                    rpcPlan: plan,
+                    rpcRemaining: remaining
+                )
+            }
         }
         
         return OpenCodeUsage(needsLogin: true, status: .fetchFailed)
@@ -116,6 +192,10 @@ class OpenCodeService: NSObject, NSWindowDelegate {
         var rollingPercent: Double?
         var weeklyPercent: Double?
         var monthlyPercent: Double?
+        var rollingReset: String?
+        var weeklyReset: String?
+        var monthlyReset: String?
+        var rpcResetInSec: Int?
         
         let lines = text.components(separatedBy: "\n").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
         
@@ -142,11 +222,71 @@ class OpenCodeService: NSObject, NSWindowDelegate {
                         }
                     }
                 }
+                
+                // 找重置时间（当前行往后 3 行内）
+                let timeWindow = [line] + (i+1..<min(i+4, lines.count)).map { lines[$0] }
+                for tl in timeWindow {
+                    // 日期格式: YYYY-MM-DD 或 YYYY/MM/DD
+                    if let dateRange = tl.range(of: "\\d{4}[-/]\\d{1,2}[-/]\\d{1,2}", options: .regularExpression) {
+                        let dateStr = String(tl[dateRange])
+                        if line.localizedCaseInsensitiveContains("滚动") || line.localizedCaseInsensitiveContains("rolling") {
+                            rollingReset = dateStr
+                        } else if line.localizedCaseInsensitiveContains("每周") || line.localizedCaseInsensitiveContains("weekly") {
+                            weeklyReset = dateStr
+                        } else if line.localizedCaseInsensitiveContains("每月") || line.localizedCaseInsensitiveContains("monthly") {
+                            monthlyReset = dateStr
+                        }
+                    }
+                    // "重置于 X 天 Y 小时 Z 分钟" 倒计时格式
+                    if tl.localizedCaseInsensitiveContains("重置") || tl.localizedCaseInsensitiveContains("剩余") {
+                        // 提取完整的倒计时文本（去掉"重置于"/"剩余"前缀）
+                        let cleanTL = tl
+                            .replacingOccurrences(of: "重置于", with: "")
+                            .replacingOccurrences(of: "重置", with: "")
+                            .replacingOccurrences(of: "剩余", with: "")
+                            .trimmingCharacters(in: .whitespaces)
+                        if !cleanTL.isEmpty {
+                            let isRolling = line.localizedCaseInsensitiveContains("滚动") || line.localizedCaseInsensitiveContains("rolling")
+                            let isWeekly = line.localizedCaseInsensitiveContains("每周") || line.localizedCaseInsensitiveContains("weekly")
+                            let isMonthly = line.localizedCaseInsensitiveContains("每月") || line.localizedCaseInsensitiveContains("monthly")
+                            if isRolling { rollingReset = cleanTL }
+                            else if isWeekly { weeklyReset = cleanTL }
+                            else if isMonthly { monthlyReset = cleanTL }
+                        }
+                        
+                        // 同时计算总秒数（用于 rpcResetInSec）
+                        var totalSec = 0
+                        if let dMatch = try? NSRegularExpression(pattern: "(\\d+)\\s*(天|day)", options: .caseInsensitive),
+                           let m = dMatch.firstMatch(in: tl, range: NSRange(location: 0, length: tl.utf16.count)),
+                           let dr = Range(m.range(at: 1), in: tl) {
+                            totalSec += (Int(tl[dr]) ?? 0) * 86400
+                        }
+                        if let hMatch = try? NSRegularExpression(pattern: "(\\d+)\\s*(小时|hour|h|hr)", options: .caseInsensitive),
+                           let m = hMatch.firstMatch(in: tl, range: NSRange(location: 0, length: tl.utf16.count)),
+                           let hr = Range(m.range(at: 1), in: tl) {
+                            totalSec += (Int(tl[hr]) ?? 0) * 3600
+                        }
+                        if let mMatch = try? NSRegularExpression(pattern: "(\\d+)\\s*(分钟|min|m)(?!o)", options: .caseInsensitive),
+                           let m = mMatch.firstMatch(in: tl, range: NSRange(location: 0, length: tl.utf16.count)),
+                           let mr = Range(m.range(at: 1), in: tl) {
+                            totalSec += (Int(tl[mr]) ?? 0) * 60
+                        }
+                        if totalSec > 0 { rpcResetInSec = totalSec }
+                    }
+                }
             }
         }
         
         if rollingPercent != nil || weeklyPercent != nil || monthlyPercent != nil {
-            return OpenCodeUsage(rollingPercent: rollingPercent, weeklyPercent: weeklyPercent, monthlyPercent: monthlyPercent)
+            return OpenCodeUsage(
+                rpcResetInSec: rpcResetInSec,
+                rollingPercent: rollingPercent,
+                rollingReset: rollingReset,
+                weeklyPercent: weeklyPercent,
+                weeklyReset: weeklyReset,
+                monthlyPercent: monthlyPercent,
+                monthlyReset: monthlyReset
+            )
         }
         return nil
     }
@@ -154,32 +294,59 @@ class OpenCodeService: NSObject, NSWindowDelegate {
     // MARK: - HTML 解析
     
     private func extractJSONFromHTML(_ html: String) -> [String: Any]? {
-        // 查找 __NEXT_DATA__ 或类似的内嵌 JSON
-        // SolidJS 可能把初始状态放在 script 标签中
-        let patterns = [
-            "window.__INITIAL_STATE__\\s*=\\s*(\\{.+?\\});",
-            "window.__DATA__\\s*=\\s*(\\{.+?\\});",
-            "<script[^>]*>\\s*window\\.__[A-Z_]+__\\s*=\\s*(\\{.+?\\})\\s*<\\/script>",
-            "\"usagePercent\":\\s*([\\d.]+)",
-            "\"remaining\":\\s*(\\d+)",
-            "\"plan\":\\s*\"([^\"]+)\"",
-        ]
+        // 先在 HTML 中搜索 resetInSec / usagePercent 等关键字段
+        let knownKeys = ["resetInSec", "usagePercent", "remaining", "plan", "totalLimit", "totalUsed", "useBalance"]
         
-        for pattern in patterns {
-            if let range = html.range(of: pattern, options: .regularExpression) {
-                let match = String(html[range])
-                print("📊 匹配到: \(match.prefix(100))")
+        // 搜索包含这些字段的 JSON 对象: { "key": value, ... }
+        for key in knownKeys {
+            let pattern = "\\\"\(key)\\\"\\s*:\\s*(\\d+(\\.\\d+)?|true|false|\\\"[^\\\"]*\\\")"
+            if let _ = html.range(of: pattern, options: .regularExpression) {
+                // 找到了已知字段 → 尝试提取整个 JSON 块
+                // 往前找 { 或 [，往后匹配到对应的 } 或 ]
+                break
             }
         }
         
-        // 更简单的: 搜索 { 开始 } 结束的 JSON
-        guard let startIdx = html.range(of: "\\{")?.lowerBound,
-              let endIdx = html.range(of: "\\}")?.upperBound else { return nil }
+        // 搜索 script 标签内的完整 JSON 对象
+        let jsonPatterns = [
+            "window\\.__[A-Z_]+__\\s*=\\s*(\\{.+?\\});",
+            "\"usagePercent\"\\s*:\\s*[\\d.]+[^}]+\\}",
+            "\\{[^}]*\"resetInSec\"[^}]*\\}",
+            "\\{[^}]*\"usagePercent\"[^}]*\\}",
+        ]
         
-        return nil
-    }
-    
-    private func parseCapturedJSON(_ json: [String: Any]) -> OpenCodeUsage? {
+        for pattern in jsonPatterns {
+            if let range = html.range(of: pattern, options: .regularExpression) {
+                let jsonStr = String(html[range])
+                // 提取 JSON 部分 (去掉 var name = 前缀)
+                var cleaned = jsonStr
+                if let eqRange = jsonStr.range(of: "=") {
+                    cleaned = String(jsonStr[eqRange.upperBound...]).trimmingCharacters(in: .whitespaces)
+                }
+                // 去掉末尾的 ;
+                if cleaned.hasSuffix(";") { cleaned = String(cleaned.dropLast()) }
+                // 去掉尾部冗余
+                if let closeIdx = cleaned.lastIndex(of: "}") {
+                    cleaned = String(cleaned[...closeIdx])
+                }
+                if let data = cleaned.data(using: .utf8),
+                   let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                    print("📊 JSON 解析成功: \(json)")
+                    return json
+                }
+            }
+        }
+        
+        // 最后尝试: 直接搜索 resetInSec 数字
+        if let resetRange = html.range(of: "\"resetInSec\"\\s*:\\s*(\\d+)", options: .regularExpression),
+           let colonRange = html[resetRange].range(of: ":") {
+            let numStr = html[resetRange][colonRange.upperBound...].trimmingCharacters(in: .whitespaces)
+            if let secs = Int(numStr) {
+                print("📊 直接提取 resetInSec: \(secs)")
+                return ["resetInSec": secs]
+            }
+        }
+        
         return nil
     }
     
