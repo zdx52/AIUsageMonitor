@@ -32,6 +32,9 @@ struct SettingsView: View {
                             .foregroundColor(.green)
                             .transition(.opacity)
                     }
+                    Text("v\(appVersion)")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
                     Button("保存") {
                         saveSettings()
                     }
@@ -192,6 +195,12 @@ struct SettingsView: View {
         .onAppear {
             loadSettings()
         }
+    }
+    
+    private var appVersion: String {
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?.?.?"
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "?"
+        return "\(version) (\(build))"
     }
     
     private func loadSettings() {

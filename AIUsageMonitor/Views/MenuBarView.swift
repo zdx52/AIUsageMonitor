@@ -17,6 +17,9 @@ struct MenuBarView: View {
                     Text("AI 用量监控")
                         .font(.headline)
                     Spacer()
+                    Text("v\(appVersion)")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
                     if dataStore.isLoading {
                         ProgressView()
                             .scaleEffect(0.6)
@@ -359,6 +362,12 @@ struct MenuBarView: View {
             return .orange.opacity(0.12)
         }
         return .purple.opacity(0.1)
+    }
+    
+    private var appVersion: String {
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?.?.?"
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "?"
+        return "\(version) (\(build))"
     }
 }
 
