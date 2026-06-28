@@ -56,6 +56,9 @@ class DataStore: ObservableObject {
     @Published var tavilyRateLimited = false
     private var lastSuccessfulTavily: TavilyUsage?
     @Published var networkSpeed: NetworkSpeedMonitor.Speed?
+    @Published var hindsightStats: HindsightStats?
+    @Published var hindsightAvailable: Bool = false
+    @Published var nextRefreshAt: Date?
     
     func refreshAll() async {
         isLoading = true
@@ -122,6 +125,8 @@ class DataStore: ObservableObject {
         }
         
         self.lastRefreshTime = Date()
+        let interval = UserDefaults.standard.object(forKey: "refreshInterval") as? Double ?? 300
+        self.nextRefreshAt = Date().addingTimeInterval(interval)
         self.isLoading = false
         
         self.updateHealthLevel()
@@ -227,5 +232,17 @@ class DataStore: ObservableObject {
         speed.replacingOccurrences(of: " MB/s", with: "M")
              .replacingOccurrences(of: " KB/s", with: "K")
              .replacingOccurrences(of: " ", with: "")
+    }
+    
+    // MARK: - Hindsight 刷新
+    
+    func refreshHindsight() async {
+        let stats = await HindsightService.shared.fetchStats()
+        if stats != nil {
+            hindsightStats = stats
+            hindsightAvailable = true
+        } else {
+            hindsightAvailable = await HindsightService.shared.checkHealth()
+        }
     }
 }

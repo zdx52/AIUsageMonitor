@@ -16,6 +16,7 @@ struct SettingsView: View {
     @State private var showDeepSeek: Bool = true
     @State private var showTavily: Bool = true
     @State private var showOpenCode: Bool = true
+    @State private var showHindsight: Bool = true
     
     var body: some View {
         ScrollView {
@@ -56,6 +57,7 @@ struct SettingsView: View {
                         Toggle("DeepSeek 余额", isOn: $showDeepSeek)
                         Toggle("Tavily 用量", isOn: $showTavily)
                         Toggle("OpenCode GO 用量", isOn: $showOpenCode)
+                        Toggle("Hindsight 记忆", isOn: $showHindsight)
                     }
                     .padding(.vertical, 4)
                 }
@@ -215,6 +217,7 @@ struct SettingsView: View {
         showDeepSeek = UserDefaults.standard.object(forKey: "showDeepSeek") as? Bool ?? true
         showTavily = UserDefaults.standard.object(forKey: "showTavily") as? Bool ?? true
         showOpenCode = UserDefaults.standard.object(forKey: "showOpenCode") as? Bool ?? true
+        showHindsight = UserDefaults.standard.object(forKey: "showHindsight") as? Bool ?? true
     }
     
     private func saveSettings() {
@@ -225,6 +228,7 @@ struct SettingsView: View {
         UserDefaults.standard.set(showDeepSeek, forKey: "showDeepSeek")
         UserDefaults.standard.set(showTavily, forKey: "showTavily")
         UserDefaults.standard.set(showOpenCode, forKey: "showOpenCode")
+        UserDefaults.standard.set(showHindsight, forKey: "showHindsight")
         
         withAnimation {
             saveMessage = "✅ 已保存"

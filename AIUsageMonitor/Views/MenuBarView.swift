@@ -5,6 +5,8 @@ struct MenuBarView: View {
     @EnvironmentObject var dataStore: DataStore
     @State private var showSettings = false
     @State private var refreshID = UUID()
+    @State private var now = Date()
+    private let countdownTimer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -124,6 +126,31 @@ struct MenuBarView: View {
                         Text("请在设置中配置 Tavily API Key")
                             .font(.caption)
                             .foregroundStyle(.orange)
+                    }
+                }
+            }
+            
+            // MARK: - Hindsight 数据
+            if UserDefaults.standard.bool(forKey: "showHindsight"),
+               dataStore.hindsightAvailable || dataStore.hindsightStats != nil {
+                UsageCard(
+                    icon: "brain.head.profile",
+                    title: "Hindsight",
+                    iconColor: .indigo,
+                    backgroundColor: .indigo.opacity(0.08)
+                ) {
+                    if let hs = dataStore.hindsightStats {
+                        UsageRow(label: "记忆总数", value: "\(hs.totalMemories)")
+                        UsageRow(label: "经验", value: "\(hs.experiences)")
+                        UsageRow(label: "观察", value: "\(hs.observations)")
+                        UsageRow(label: "世界知识", value: "\(hs.worldFacts)")
+                    } else {
+                        HStack(spacing: 4) {
+                            Circle().fill(.green).frame(width: 6, height: 6)
+                            Text("服务在线")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
             }
@@ -313,6 +340,14 @@ struct MenuBarView: View {
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
             }
+            if let next = dataStore.nextRefreshAt {
+                let remain = Int(next.timeIntervalSince(now))
+                if remain > 0 {
+                    Text("下次刷新: \(remain / 60) 分 \(remain % 60) 秒")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+            }
             
             // 操作按钮
             HStack {
@@ -338,6 +373,15 @@ struct MenuBarView: View {
                 Spacer()
                 
                 Button(action: {
+                    DashboardWindowController.shared.show()
+                }) {
+                    Label("看板", systemImage: "chart.bar.doc.horizontal")
+                        .font(.caption)
+                }
+                
+                Spacer()
+                
+                Button(action: {
                     NSApplication.shared.terminate(nil)
                 }) {
                     Label("退出", systemImage: "power")
@@ -348,6 +392,7 @@ struct MenuBarView: View {
         }
         .padding()
         .frame(width: 320)
+        .onReceive(countdownTimer) { _ in now = Date() }
     }
     
     // MARK: - DeepSeek 背景色（余额预警）

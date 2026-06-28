@@ -296,7 +296,7 @@ class OpenCodeWebViewScraper: NSObject, WKNavigationDelegate, WKScriptMessageHan
     func parseCapturedData(_ json: [String: Any]) -> OpenCodeUsage? {
         if let data = try? JSONSerialization.data(withJSONObject: json) {
             if let rpc = try? JSONDecoder().decode(OpenCodeRPCResponse.self, from: data) {
-                if rpc.usagePercent != nil || rpc.remaining != nil || rpc.plan != nil {
+                if rpc.usagePercent != nil || rpc.remaining != nil || rpc.plan != nil || rpc.resetInSec != nil {
                     print("📊 解析成功: \\(rpc)")
                     return OpenCodeUsage(
                         useBalance: rpc.useBalance ?? false,
