@@ -199,6 +199,7 @@ class OpenCodeService: NSObject, NSWindowDelegate {
         
         let lines = text.components(separatedBy: "\n").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
         
+        // 第一遍：提取三个用量百分比
         for i in 0..<lines.count {
             let line = lines[i]
             let keywords = ["滚动", "rolling", "每周", "weekly", "每月", "monthly", "用量", "usage", "剩余", "remaining", "已用", "used", "limit", "额度"]
@@ -222,57 +223,42 @@ class OpenCodeService: NSObject, NSWindowDelegate {
                         }
                     }
                 }
-                
-                // 找重置时间（当前行往后 3 行内）
-                let timeWindow = [line] + (i+1..<min(i+4, lines.count)).map { lines[$0] }
-                for tl in timeWindow {
-                    // 日期格式: YYYY-MM-DD 或 YYYY/MM/DD
-                    if let dateRange = tl.range(of: "\\d{4}[-/]\\d{1,2}[-/]\\d{1,2}", options: .regularExpression) {
-                        let dateStr = String(tl[dateRange])
-                        if line.localizedCaseInsensitiveContains("滚动") || line.localizedCaseInsensitiveContains("rolling") {
-                            rollingReset = dateStr
-                        } else if line.localizedCaseInsensitiveContains("每周") || line.localizedCaseInsensitiveContains("weekly") {
-                            weeklyReset = dateStr
-                        } else if line.localizedCaseInsensitiveContains("每月") || line.localizedCaseInsensitiveContains("monthly") {
-                            monthlyReset = dateStr
-                        }
+            }
+        }
+        
+        // 第二遍：按页面中出现的顺序提取所有重置时间，依次分配给滚动/每周/每月
+        var resetIndex = 0
+        for line in lines {
+            if line.localizedCaseInsensitiveContains("重置") || line.localizedCaseInsensitiveContains("剩余") {
+                let cleanTL = line
+                    .replacingOccurrences(of: "重置于", with: "")
+                    .replacingOccurrences(of: "重置", with: "")
+                    .replacingOccurrences(of: "剩余", with: "")
+                    .trimmingCharacters(in: .whitespaces)
+                if !cleanTL.isEmpty {
+                    if resetIndex == 0 { rollingReset = cleanTL }
+                    else if resetIndex == 1 { weeklyReset = cleanTL }
+                    else if resetIndex == 2 { monthlyReset = cleanTL }
+                    resetIndex += 1
+                    
+                    // 同时计算总秒数
+                    var totalSec = 0
+                    if let dMatch = try? NSRegularExpression(pattern: "(\\d+)\\s*(天|day)", options: .caseInsensitive),
+                       let m = dMatch.firstMatch(in: line, range: NSRange(location: 0, length: line.utf16.count)),
+                       let dr = Range(m.range(at: 1), in: line) {
+                        totalSec += (Int(line[dr]) ?? 0) * 86400
                     }
-                    // "重置于 X 天 Y 小时 Z 分钟" 倒计时格式
-                    if tl.localizedCaseInsensitiveContains("重置") || tl.localizedCaseInsensitiveContains("剩余") {
-                        // 提取完整的倒计时文本（去掉"重置于"/"剩余"前缀）
-                        let cleanTL = tl
-                            .replacingOccurrences(of: "重置于", with: "")
-                            .replacingOccurrences(of: "重置", with: "")
-                            .replacingOccurrences(of: "剩余", with: "")
-                            .trimmingCharacters(in: .whitespaces)
-                        if !cleanTL.isEmpty {
-                            let isRolling = line.localizedCaseInsensitiveContains("滚动") || line.localizedCaseInsensitiveContains("rolling")
-                            let isWeekly = line.localizedCaseInsensitiveContains("每周") || line.localizedCaseInsensitiveContains("weekly")
-                            let isMonthly = line.localizedCaseInsensitiveContains("每月") || line.localizedCaseInsensitiveContains("monthly")
-                            if isRolling { rollingReset = cleanTL }
-                            else if isWeekly { weeklyReset = cleanTL }
-                            else if isMonthly { monthlyReset = cleanTL }
-                        }
-                        
-                        // 同时计算总秒数（用于 rpcResetInSec）
-                        var totalSec = 0
-                        if let dMatch = try? NSRegularExpression(pattern: "(\\d+)\\s*(天|day)", options: .caseInsensitive),
-                           let m = dMatch.firstMatch(in: tl, range: NSRange(location: 0, length: tl.utf16.count)),
-                           let dr = Range(m.range(at: 1), in: tl) {
-                            totalSec += (Int(tl[dr]) ?? 0) * 86400
-                        }
-                        if let hMatch = try? NSRegularExpression(pattern: "(\\d+)\\s*(小时|hour|h|hr)", options: .caseInsensitive),
-                           let m = hMatch.firstMatch(in: tl, range: NSRange(location: 0, length: tl.utf16.count)),
-                           let hr = Range(m.range(at: 1), in: tl) {
-                            totalSec += (Int(tl[hr]) ?? 0) * 3600
-                        }
-                        if let mMatch = try? NSRegularExpression(pattern: "(\\d+)\\s*(分钟|min|m)(?!o)", options: .caseInsensitive),
-                           let m = mMatch.firstMatch(in: tl, range: NSRange(location: 0, length: tl.utf16.count)),
-                           let mr = Range(m.range(at: 1), in: tl) {
-                            totalSec += (Int(tl[mr]) ?? 0) * 60
-                        }
-                        if totalSec > 0 { rpcResetInSec = totalSec }
+                    if let hMatch = try? NSRegularExpression(pattern: "(\\d+)\\s*(小时|hour|h|hr)", options: .caseInsensitive),
+                       let m = hMatch.firstMatch(in: line, range: NSRange(location: 0, length: line.utf16.count)),
+                       let hr = Range(m.range(at: 1), in: line) {
+                        totalSec += (Int(line[hr]) ?? 0) * 3600
                     }
+                    if let mMatch = try? NSRegularExpression(pattern: "(\\d+)\\s*(分钟|min|m)(?!o)", options: .caseInsensitive),
+                       let m = mMatch.firstMatch(in: line, range: NSRange(location: 0, length: line.utf16.count)),
+                       let mr = Range(m.range(at: 1), in: line) {
+                        totalSec += (Int(line[mr]) ?? 0) * 60
+                    }
+                    if totalSec > 0 { rpcResetInSec = totalSec }
                 }
             }
         }
