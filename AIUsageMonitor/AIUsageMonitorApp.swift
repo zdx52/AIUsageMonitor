@@ -86,6 +86,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
             .store(in: &cancellables)
         
+        // 监听弹窗关闭通知（设置/看板按钮发出）
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(closePopover),
+            name: .closePopoverForPanel,
+            object: nil
+        )
+        
         Task {
             await dataStore.refreshAll()
         }
@@ -112,6 +120,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         } else {
             popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
         }
+    }
+    
+    @objc func closePopover() {
+        popover?.close()
     }
     
     func setupRefreshTimer() {
@@ -170,4 +182,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
         NotificationCenter.default.removeObserver(self)
     }
+}
+
+extension Notification.Name {
+    static let closePopoverForPanel = Notification.Name("closePopoverForPanel")
 }

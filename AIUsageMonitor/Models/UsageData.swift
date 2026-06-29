@@ -32,6 +32,12 @@ struct DeepSeekUsage: Equatable {
     let currency: String
 }
 
+extension Bundle {
+    var appVersionString: String {
+        infoDictionary?["CFBundleShortVersionString"] as? String ?? "?.?.?"
+    }
+}
+
 // MARK: - 服务健康度
 
 enum ServiceHealth: Comparable {

@@ -11,9 +11,7 @@ class DashboardWindowController: NSWindowController, NSWindowDelegate, WKNavigat
     private var proxyProcess: Process?
     private var proxyPipe: Pipe?
     private let proxyScript = "hindsight-server.py"
-    private let proxyDir: String = {
-        Bundle.main.resourcePath ?? "/Users/zdx52/Documents/小胖紫/AIUsageMonitor/AIUsageMonitor.app/Contents/Resources"
-    }()
+    private let proxyDir: String = Bundle.main.resourcePath!
     private let upgradeScript = "/Users/zdx52/.hermes/scripts/hindsight-upgrade.sh"
     private var currentVer: String = "?.?.?"
     
@@ -184,7 +182,9 @@ class DashboardWindowController: NSWindowController, NSWindowDelegate, WKNavigat
                     killTask.waitUntilExit()
                 }
             }
-        } catch {}
+        } catch {
+            print("⚠️ 无法清理端口 8080: \(error.localizedDescription)")
+        }
     }
     
     private func stopProxy() {

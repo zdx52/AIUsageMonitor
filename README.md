@@ -101,14 +101,8 @@ cp -r .build/release/AIUsageMonitor AIUsageMonitor.app/Contents/MacOS/
 - 🧩 **心智模型始终显示** — 即使 0 条也灰显入口
 - 🐛 **API 字段适配** — 修正 fact_type / date 字段映射，数据正确显示
 - 🏷️ **版本号统一** — Info.plist / README / GitHub 统一为 v1.4.2
-
-### v1.4.0
-
-- 🧠 **Hindsight 集成** — 菜单栏弹窗显示记忆总数/经验/观察/世界知识，5 分钟自动刷新
-- 📊 **看板面板** — WKWebView 内嵌 Hindsight 看板，支持搜索、分类和详情查看
-- 🔄 **OpenCode 重置倒计时** — 每项用量独立显示剩余重置时间（滚动/每周/每月）
-- ⏱️ **下次刷新倒计时** — 弹窗底部实时显示距离下次自动刷新的剩余时间
-- 🔘 **Hindsight 显示开关** — 设置面板新增 Hindsight 记忆显示开关
-- ♻️ **Hindsight 刷新跟随设置** — 刷新间隔遵循用户自定义配置
-- 🔧 **弹窗交互优化** — 点击弹窗外部自动关闭
-- 🎨 **看板时间本地化** — 记忆时间显示为本地时区（zh-CN）
+- 🐛 **Info.plist 构建变量修复** — 替换 $(EXECUTABLE_NAME) 等为字面值，修复 bundle 读取
+- 🎨 **OpenCode 登录 UI 精简** — 提取公共组件消除 108 行重复代码
+- 🧹 **代码清理** — 移除冷 msg handler、统一版本号扩展、proxyDir 硬编码修复、catch 日志化
+- 🔧 **设置面板遮挡修复** — 点击设置/看板时弹窗自动关闭，不遮挡新面板
+- 🏷️ **Dock 图标隐藏** — 添加 LSUIElement=true，纯菜单栏应用

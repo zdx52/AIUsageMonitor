@@ -7,7 +7,7 @@ struct WebScrapeResult {
     let error: String?
 }
 
-class WebViewScraper: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
+class WebViewScraper: NSObject, WKNavigationDelegate {
     private var webView: WKWebView?
     private var completion: ((WebScrapeResult) -> Void)?
     private var timeoutTimer: Timer?
@@ -44,7 +44,6 @@ class WebViewScraper: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
                     forMainFrameOnly: false
                 )
                 config.userContentController.addUserScript(userScript)
-                config.userContentController.add(self, name: "apiInterceptor")
                
                 self.webConfig = config
                 self.webView = WKWebView(frame: NSRect(x: 0, y: 0, width: 1280, height: 800), configuration: config)
@@ -72,8 +71,6 @@ class WebViewScraper: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
         guard !isFinished else { return }
         isFinished = true
         timeoutTimer?.invalidate()
-        // 卸下 JS 消息处理器，避免 WKWebView 持有本对象导致内存泄漏
-        webConfig?.userContentController.removeScriptMessageHandler(forName: "apiInterceptor")
         completion?(result)
         completion = nil
         webView = nil
@@ -121,9 +118,6 @@ class WebViewScraper: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
         finishWith(result: WebScrapeResult(success: false, data: nil, error: "导航失败: \(error.localizedDescription)"))
     }
     
-    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
-        // 处理消息
-    }
 }
 
 class DeepSeekUsageScraper {
