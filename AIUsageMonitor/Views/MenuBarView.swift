@@ -144,6 +144,21 @@ struct MenuBarView: View {
                         UsageRow(label: "经验", value: "\(hs.experiences)")
                         UsageRow(label: "观察", value: "\(hs.observations)")
                         UsageRow(label: "世界知识", value: "\(hs.worldFacts)")
+                        if let ver = hs.version {
+                            UsageRow(label: "版本", value: "v\(ver)")
+                        }
+                        if hs.hasUpdate, let latest = hs.latestVersion {
+                            HStack {
+                                Text("更新")
+                                    .font(.caption)
+                                    .foregroundStyle(.tertiary)
+                                Spacer()
+                                Text("⬆ v\(latest) 可用")
+                                    .font(.footnote)
+                                    .fontWeight(.semibold)
+                                    .foregroundStyle(.orange)
+                            }
+                        }
                     } else {
                         HStack(spacing: 4) {
                             Circle().fill(.green).frame(width: 6, height: 6)
