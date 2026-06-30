@@ -13,7 +13,7 @@
   <img alt="License" src="https://img.shields.io/github/license/zdx52/AIUsageMonitor">
   <img alt="Swift" src="https://img.shields.io/badge/swift-5.0-orange">
   <img alt="macOS" src="https://img.shields.io/badge/platform-macOS-lightgray">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.4.2-blue">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.4.3-blue">
 </p>
 
 AIUsageMonitor 是一个 macOS 菜单栏轻量级应用，实时监控 DeepSeek、Tavily、OpenCode GO 和 Hindsight 的 API 用量与记忆状态。通过菜单栏常驻，随时掌握 AI 账户状态，支持自动刷新和手动刷新。
@@ -91,6 +91,10 @@ cp -r .build/release/AIUsageMonitor AIUsageMonitor.app/Contents/MacOS/
 ```
 
 ## 更新内容
+
+### v1.4.3
+
+- 🐛 **OpenCode 登录 cookie 同步修复** — 登录成功时立即同步 cookie 到 HTTPCookieStorage，刷新不再报"登录已过期"
 
 ### v1.4.2
 

@@ -130,12 +130,19 @@ class LoginWindowNavigationDelegate: NSObject, WKNavigationDelegate {
         loginAlreadyDetected = true
         cleanup()
         
-        if let window = webView.window {
-            window.close()
+        // 立即将 WKWebView 的 cookie 同步到 HTTPCookieStorage
+        // 确保后续 refreshAll 能直接找到 cookie
+        let panelWindow = webView.window
+        webView.configuration.websiteDataStore.httpCookieStore.getAllCookies { cookies in
+            for cookie in cookies where cookie.domain.contains("opencode.ai") {
+                HTTPCookieStorage.shared.setCookie(cookie)
+            }
+            DispatchQueue.main.async {
+                panelWindow?.close()
+                NotificationCenter.default.post(name: .openCodeLoginSuccess, object: nil)
+                self.onLoginSuccess?()
+            }
         }
-        
-        NotificationCenter.default.post(name: .openCodeLoginSuccess, object: nil)
-        onLoginSuccess?()
     }
     
     private func handleLoginFailed() {
