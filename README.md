@@ -13,7 +13,7 @@
   <img alt="License" src="https://img.shields.io/github/license/zdx52/AIUsageMonitor">
   <img alt="Swift" src="https://img.shields.io/badge/swift-5.0-orange">
   <img alt="macOS" src="https://img.shields.io/badge/platform-macOS-lightgray">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.4.3-blue">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.4.4-blue">
 </p>
 
 AIUsageMonitor 是一个 macOS 菜单栏轻量级应用，实时监控 DeepSeek、Tavily、OpenCode GO 和 Hindsight 的 API 用量与记忆状态。通过菜单栏常驻，随时掌握 AI 账户状态，支持自动刷新和手动刷新。
@@ -91,6 +91,10 @@ cp -r .build/release/AIUsageMonitor AIUsageMonitor.app/Contents/MacOS/
 ```
 
 ## 更新内容
+
+### v1.4.4
+
+- ⏱️ **Hindsight 启动等待延长至 2 分钟** — 重启后 app 最多等 2 分钟直到 Hindsight 就绪，不再因为 PostgreSQL/模型加载慢而错过
 
 ### v1.4.3
 

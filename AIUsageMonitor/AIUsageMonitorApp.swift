@@ -107,9 +107,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Hindsight 跟随用户设置的刷新间隔
         setupHindsightTimer()
         
-        // 启动时立即获取一次 Hindsight 数据
+        // 启动时持续重试直到 Hindsight 就绪（每 3 秒一次，最多等 2 分钟）
         Task { @MainActor in
-            await dataStore.refreshHindsight()
+            var attempts = 0
+            let maxAttempts = 40
+            while attempts < maxAttempts {
+                await dataStore.refreshHindsight()
+                if dataStore.hindsightAvailable { break }
+                try? await Task.sleep(nanoseconds: 3_000_000_000)
+                attempts += 1
+            }
         }
     }
     
