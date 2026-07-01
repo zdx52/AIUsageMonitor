@@ -65,6 +65,7 @@ class DataStore: ObservableObject {
     @Published var hindsightStats: HindsightStats?
     @Published var hindsightAvailable: Bool = false
     @Published var nextRefreshAt: Date?
+    @Published var temperatureData: TemperatureData?
     
     func refreshAll() async {
         isLoading = true
@@ -226,11 +227,22 @@ class DataStore: ObservableObject {
     func updateNetworkSpeed() {
         let speed = NetworkSpeedMonitor.shared.getSpeed()
         networkSpeed = speed
-        if let s = speed {
-            menuBarTitle = "↓\(shorten(s.download)) ↑\(shorten(s.upload))"
-        } else {
-            menuBarTitle = "⏳ 网速..."
+        
+        var parts: [String] = []
+        if let td = temperatureData {
+            if let temp = td.batteryTemperature {
+                parts.append("\(String(format: "%.1f", temp))°C")
+            }
+            if let cpu = td.cpuUsage {
+                parts.append("\(String(format: "%.0f", cpu))%")
+            }
         }
+        if let s = speed {
+            parts.append("↓\(shorten(s.download)) ↑\(shorten(s.upload))")
+        } else {
+            parts.append("⏳ 网速...")
+        }
+        menuBarTitle = parts.joined(separator: " ")
     }
     
     /// 缩短速度显示：≥1 MB/s 显示 M，<1 MB/s 显示 K
@@ -250,5 +262,11 @@ class DataStore: ObservableObject {
         } else {
             hindsightAvailable = await HindsightService.shared.checkHealth()
         }
+    }
+    
+    // MARK: - 温度刷新
+    
+    func refreshTemperature() {
+        temperatureData = TemperatureMonitor.shared.getStatus()
     }
 }

@@ -16,7 +16,7 @@ struct MenuBarView: View {
                     Image(systemName: "cpu")
                         .font(.system(size: 14, weight: .medium))
                         .foregroundStyle(.secondary)
-                    Text("AI 用量监控")
+                    Text("系统监控")
                         .font(.headline)
                     Spacer()
                     Text("v\(Bundle.main.appVersionString)")
@@ -39,207 +39,251 @@ struct MenuBarView: View {
             }
             .padding(.bottom, 2)
             
-            // MARK: - DeepSeek 数据
-            if UserDefaults.standard.bool(forKey: "showDeepSeek") {
-                UsageCard(
-                    icon: "waveform.path.ecg",
-                    title: "DeepSeek",
-                    iconColor: .purple,
-                    backgroundColor: deepSeekBackgroundColor
-                ) {
-                    if let ds = dataStore.deepSeekBalance {
-                        UsageRow(label: "总余额", value: "¥\(String(format: "%.2f", ds.totalBalance))")
-                        UsageRow(label: "赠送余额", value: "¥\(String(format: "%.2f", ds.grantedBalance))")
-                        UsageRow(label: "充值余额", value: "¥\(String(format: "%.2f", ds.toppedUpBalance))")
-                        if ds.todayCost > 0 {
-                            UsageRow(label: "今日消耗", value: "¥\(String(format: "%.2f", ds.todayCost))")
-                        }
-                        Text("货币: \(ds.currency)")
-                            .font(.caption)
-                            .foregroundStyle(.tertiary)
-                        
-                        if ds.totalBalance < 5 {
-                            Label("余额不足，请尽快充值", systemImage: "exclamationmark.triangle.fill")
-                                .font(.caption)
-                                .foregroundStyle(.red)
-                        } else if ds.totalBalance < 20 {
-                            Label("余额偏低", systemImage: "exclamationmark.triangle")
-                                .font(.caption)
-                                .foregroundStyle(.orange)
-                        }
-                    } else {
-                        Text("暂无数据")
-                            .foregroundStyle(.secondary)
-                        Text("请在设置中配置 DeepSeek API Key")
-                            .font(.caption)
-                            .foregroundStyle(.orange)
-                    }
-                }
-            }
+            // MARK: - 两栏布局
             
-            // MARK: - Tavily 数据
-            if UserDefaults.standard.bool(forKey: "showTavily") {
-                UsageCard(
-                    icon: "magnifyingglass",
-                    title: "Tavily",
-                    iconColor: .cyan,
-                    backgroundColor: .cyan.opacity(0.1)
-                ) {
-                    if let tv = dataStore.tavilyUsage {
-                        UsageRow(label: "计划", value: tv.plan)
-                        
-                        VStack(alignment: .leading, spacing: 4) {
-                            HStack {
-                                Text("已用/总额度")
-                                    .font(.caption)
+            HStack(alignment: .top, spacing: 12) {
+                // ===== 左栏：系统相关 =====
+                VStack(spacing: 12) {
+                    
+                    // MARK: - 温度监控
+                    if UserDefaults.standard.object(forKey: "showTemperature") as? Bool ?? true {
+                        UsageCard(
+                            icon: "thermometer",
+                            title: "温度",
+                            iconColor: .red,
+                            backgroundColor: .red.opacity(0.08)
+                        ) {
+                            if let td = dataStore.temperatureData {
+                                if let temp = td.batteryTemperature {
+                                    UsageRow(label: "电池温度", value: String(format: "%.1f°C", temp))
+                                } else {
+                                    UsageRow(label: "电池温度", value: "—")
+                                }
+                                UsageRow(label: "CPU 使用", value: td.cpuUsage != nil ? String(format: "%.0f%%", td.cpuUsage!) : "—")
+                                HStack(spacing: 4) {
+                                    Image(systemName: td.thermalStateIcon)
+                                        .font(.caption2)
+                                        .foregroundStyle(thermalStateColor(td.thermalState))
+                                    Text(td.thermalStateLabel)
+                                        .font(.caption)
+                                        .foregroundStyle(thermalStateColor(td.thermalState))
+                                }
+                            } else {
+                                Text("获取中...")
                                     .foregroundStyle(.secondary)
-                                Spacer()
-                                Text("\(tv.creditsUsed)/\(tv.monthlyLimit)")
-                                    .font(.caption)
-                                    .fontWeight(.medium)
                             }
-                            ProgressBar(
-                                percentage: tv.monthlyLimit > 0
-                                    ? Double(tv.creditsUsed) / Double(tv.monthlyLimit) * 100
-                                    : 0
-                            )
                         }
-                        
-                        UsageRow(label: "剩余", value: "\(tv.remaining)")
-                        if dataStore.tavilyRateLimited {
-                            Label("API 请求频繁，显示缓存数据", systemImage: "clock.arrow.circlepath")
-                                .font(.caption2)
-                                .foregroundStyle(.orange)
+                    }
+                    
+                    // MARK: - Hindsight 数据
+                    if UserDefaults.standard.bool(forKey: "showHindsight"),
+                       dataStore.hindsightAvailable || dataStore.hindsightStats != nil {
+                        UsageCard(
+                            icon: "brain.head.profile",
+                            title: "Hindsight",
+                            iconColor: .indigo,
+                            backgroundColor: .indigo.opacity(0.08)
+                        ) {
+                            if let hs = dataStore.hindsightStats {
+                                UsageRow(label: "记忆总数", value: "\(hs.totalMemories)")
+                                UsageRow(label: "经验", value: "\(hs.experiences)")
+                                UsageRow(label: "观察", value: "\(hs.observations)")
+                                UsageRow(label: "世界知识", value: "\(hs.worldFacts)")
+                                if let ver = hs.version {
+                                    UsageRow(label: "版本", value: "v\(ver)")
+                                }
+                                if hs.hasUpdate, let latest = hs.latestVersion {
+                                    HStack {
+                                        Text("更新")
+                                            .font(.caption)
+                                            .foregroundStyle(.tertiary)
+                                        Spacer()
+                                        Text("⬆ v\(latest) 可用")
+                                            .font(.footnote)
+                                            .fontWeight(.semibold)
+                                            .foregroundStyle(.orange)
+                                    }
+                                }
+                            } else {
+                                HStack(spacing: 4) {
+                                    Circle().fill(.green).frame(width: 6, height: 6)
+                                    Text("服务在线")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
                         }
-                    } else if dataStore.tavilyRateLimited {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Label("API 请求频繁", systemImage: "clock.arrow.circlepath")
-                                .font(.caption)
-                                .foregroundStyle(.orange)
-                            Text("请等待几分钟后自动恢复")
-                                .font(.caption2)
-                                .foregroundStyle(.tertiary)
-                        }
-                    } else {
-                        Text("暂无数据")
-                            .foregroundStyle(.secondary)
-                        Text("请在设置中配置 Tavily API Key")
-                            .font(.caption)
-                            .foregroundStyle(.orange)
                     }
                 }
-            }
-            
-            // MARK: - Hindsight 数据
-            if UserDefaults.standard.bool(forKey: "showHindsight"),
-               dataStore.hindsightAvailable || dataStore.hindsightStats != nil {
-                UsageCard(
-                    icon: "brain.head.profile",
-                    title: "Hindsight",
-                    iconColor: .indigo,
-                    backgroundColor: .indigo.opacity(0.08)
-                ) {
-                    if let hs = dataStore.hindsightStats {
-                        UsageRow(label: "记忆总数", value: "\(hs.totalMemories)")
-                        UsageRow(label: "经验", value: "\(hs.experiences)")
-                        UsageRow(label: "观察", value: "\(hs.observations)")
-                        UsageRow(label: "世界知识", value: "\(hs.worldFacts)")
-                        if let ver = hs.version {
-                            UsageRow(label: "版本", value: "v\(ver)")
-                        }
-                        if hs.hasUpdate, let latest = hs.latestVersion {
-                            HStack {
-                                Text("更新")
+                .frame(maxWidth: .infinity)
+                
+                // ===== 右栏：AI 用量相关 =====
+                VStack(spacing: 12) {
+                    
+                    // MARK: - DeepSeek 数据
+                    if UserDefaults.standard.bool(forKey: "showDeepSeek") {
+                        UsageCard(
+                            icon: "waveform.path.ecg",
+                            title: "DeepSeek",
+                            iconColor: .purple,
+                            backgroundColor: deepSeekBackgroundColor
+                        ) {
+                            if let ds = dataStore.deepSeekBalance {
+                                UsageRow(label: "总余额", value: "¥\(String(format: "%.2f", ds.totalBalance))")
+                                UsageRow(label: "赠送余额", value: "¥\(String(format: "%.2f", ds.grantedBalance))")
+                                UsageRow(label: "充值余额", value: "¥\(String(format: "%.2f", ds.toppedUpBalance))")
+                                if ds.todayCost > 0 {
+                                    UsageRow(label: "今日消耗", value: "¥\(String(format: "%.2f", ds.todayCost))")
+                                }
+                                Text("货币: \(ds.currency)")
                                     .font(.caption)
                                     .foregroundStyle(.tertiary)
-                                Spacer()
-                                Text("⬆ v\(latest) 可用")
-                                    .font(.footnote)
-                                    .fontWeight(.semibold)
+                                
+                                if ds.totalBalance < 5 {
+                                    Label("余额不足，请尽快充值", systemImage: "exclamationmark.triangle.fill")
+                                        .font(.caption)
+                                        .foregroundStyle(.red)
+                                } else if ds.totalBalance < 20 {
+                                    Label("余额偏低", systemImage: "exclamationmark.triangle")
+                                        .font(.caption)
+                                        .foregroundStyle(.orange)
+                                }
+                            } else {
+                                Text("暂无数据")
+                                    .foregroundStyle(.secondary)
+                                Text("请在设置中配置 DeepSeek API Key")
+                                    .font(.caption)
                                     .foregroundStyle(.orange)
                             }
                         }
-                    } else {
-                        HStack(spacing: 4) {
-                            Circle().fill(.green).frame(width: 6, height: 6)
-                            Text("服务在线")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
                     }
-                }
-            }
-            
-            // MARK: - OpenCode GO 数据
-            if UserDefaults.standard.bool(forKey: "showOpenCode") {
-                UsageCard(
-                    icon: "arrow.triangle.2.circlepath",
-                    title: "OpenCode GO",
-                    iconColor: .orange,
-                    backgroundColor: .orange.opacity(0.1)
-                ) {
-                    switch dataStore.openCodeStatus {
-                    case .notConfigured:
-                        Text("未配置")
-                            .foregroundStyle(.secondary)
-                        Text("请在设置中配置 OpenCode 工作区")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        
-                    case .noCookies:
-                        OpenCodeLoginPanel(statusIcon: "exclamationmark.triangle", statusText: "登录已过期", statusColor: .orange)
-                    case .needsLogin:
-                        OpenCodeLoginPanel(statusIcon: "exclamationmark.triangle", statusText: "需要登录", statusColor: .orange)
-                    case .fetchFailed:
-                        OpenCodeLoginPanel(statusIcon: "xmark.circle.fill", statusText: "数据获取失败", statusColor: .red)
                     
-                    case .success:
-                        if let oc = dataStore.openCodeUsage {
-                            if let rolling = oc.rollingPercent {
-                                UsageProgressRow(label: "滚动用量", percentage: rolling)
-                                if let reset = oc.rollingReset {
-                                    Text("重置于 \(reset)")
+                    // MARK: - Tavily 数据
+                    if UserDefaults.standard.bool(forKey: "showTavily") {
+                        UsageCard(
+                            icon: "magnifyingglass",
+                            title: "Tavily",
+                            iconColor: .cyan,
+                            backgroundColor: .cyan.opacity(0.1)
+                        ) {
+                            if let tv = dataStore.tavilyUsage {
+                                UsageRow(label: "计划", value: tv.plan)
+                                
+                                VStack(alignment: .leading, spacing: 4) {
+                                    HStack {
+                                        Text("已用/总额度")
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                        Spacer()
+                                        Text("\(tv.creditsUsed)/\(tv.monthlyLimit)")
+                                            .font(.caption)
+                                            .fontWeight(.medium)
+                                    }
+                                    ProgressBar(
+                                        percentage: tv.monthlyLimit > 0
+                                            ? Double(tv.creditsUsed) / Double(tv.monthlyLimit) * 100
+                                            : 0
+                                    )
+                                }
+                                
+                                UsageRow(label: "剩余", value: "\(tv.remaining)")
+                                if dataStore.tavilyRateLimited {
+                                    Label("API 请求频繁，显示缓存数据", systemImage: "clock.arrow.circlepath")
+                                        .font(.caption2)
+                                        .foregroundStyle(.orange)
+                                }
+                            } else if dataStore.tavilyRateLimited {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Label("API 请求频繁", systemImage: "clock.arrow.circlepath")
+                                        .font(.caption)
+                                        .foregroundStyle(.orange)
+                                    Text("请等待几分钟后自动恢复")
                                         .font(.caption2)
                                         .foregroundStyle(.tertiary)
                                 }
-                            }
-                            
-                            if let weekly = oc.weeklyPercent {
-                                UsageProgressRow(label: "每周用量", percentage: weekly)
-                                if let reset = oc.weeklyReset {
-                                    Text("重置于 \(reset)")
-                                        .font(.caption2)
-                                        .foregroundStyle(.tertiary)
-                                }
-                            }
-                            
-                            if let monthly = oc.monthlyPercent {
-                                UsageProgressRow(label: "每月用量", percentage: monthly)
-                                if let reset = oc.monthlyReset {
-                                    Text("重置于 \(reset)")
-                                        .font(.caption2)
-                                        .foregroundStyle(.tertiary)
-                                }
-                            }
-                            
-                            if oc.rollingPercent == nil && oc.weeklyPercent == nil && oc.monthlyPercent == nil {
-                                if let pct = oc.rpcUsagePercent {
-                                    UsageProgressRow(label: "用量", percentage: pct)
-                                } else if !oc.usagePercentages.isEmpty {
-                                    UsageProgressRow(label: "用量", percentage: Double(oc.usagePercentages.first!))
-                                } else {
-                                    UsageRow(label: "状态", value: "已订阅")
-                                }
-                            }
-                            
-                            if oc.useBalance {
-                                Label("已启用余额补充", systemImage: "checkmark.circle.fill")
+                            } else {
+                                Text("暂无数据")
+                                    .foregroundStyle(.secondary)
+                                Text("请在设置中配置 Tavily API Key")
                                     .font(.caption)
-                                    .foregroundStyle(.green)
+                                    .foregroundStyle(.orange)
+                            }
+                        }
+                    }
+                    
+                    // MARK: - OpenCode GO 数据
+                    if UserDefaults.standard.bool(forKey: "showOpenCode") {
+                        UsageCard(
+                            icon: "arrow.triangle.2.circlepath",
+                            title: "OpenCode GO",
+                            iconColor: .orange,
+                            backgroundColor: .orange.opacity(0.1)
+                        ) {
+                            switch dataStore.openCodeStatus {
+                            case .notConfigured:
+                                Text("未配置")
+                                    .foregroundStyle(.secondary)
+                                Text("请在设置中配置 OpenCode 工作区")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                
+                            case .noCookies:
+                                OpenCodeLoginPanel(statusIcon: "exclamationmark.triangle", statusText: "登录已过期", statusColor: .orange)
+                            case .needsLogin:
+                                OpenCodeLoginPanel(statusIcon: "exclamationmark.triangle", statusText: "需要登录", statusColor: .orange)
+                            case .fetchFailed:
+                                OpenCodeLoginPanel(statusIcon: "xmark.circle.fill", statusText: "数据获取失败", statusColor: .red)
+                            
+                            case .success:
+                                if let oc = dataStore.openCodeUsage {
+                                    if let rolling = oc.rollingPercent {
+                                        UsageProgressRow(label: "滚动用量", percentage: rolling)
+                                        if let reset = oc.rollingReset {
+                                            Text("重置于 \(reset)")
+                                                .font(.caption2)
+                                                .foregroundStyle(.tertiary)
+                                        }
+                                    }
+                                    
+                                    if let weekly = oc.weeklyPercent {
+                                        UsageProgressRow(label: "每周用量", percentage: weekly)
+                                        if let reset = oc.weeklyReset {
+                                            Text("重置于 \(reset)")
+                                                .font(.caption2)
+                                                .foregroundStyle(.tertiary)
+                                        }
+                                    }
+                                    
+                                    if let monthly = oc.monthlyPercent {
+                                        UsageProgressRow(label: "每月用量", percentage: monthly)
+                                        if let reset = oc.monthlyReset {
+                                            Text("重置于 \(reset)")
+                                                .font(.caption2)
+                                                .foregroundStyle(.tertiary)
+                                        }
+                                    }
+                                    
+                                    if oc.rollingPercent == nil && oc.weeklyPercent == nil && oc.monthlyPercent == nil {
+                                        if let pct = oc.rpcUsagePercent {
+                                            UsageProgressRow(label: "用量", percentage: pct)
+                                        } else if !oc.usagePercentages.isEmpty {
+                                            UsageProgressRow(label: "用量", percentage: Double(oc.usagePercentages.first!))
+                                        } else {
+                                            UsageRow(label: "状态", value: "已订阅")
+                                        }
+                                    }
+                                    
+                                    if oc.useBalance {
+                                        Label("已启用余额补充", systemImage: "checkmark.circle.fill")
+                                            .font(.caption)
+                                            .foregroundStyle(.green)
+                                    }
+                                }
                             }
                         }
                     }
                 }
+                .frame(maxWidth: .infinity)
             }
             
             // 刷新时间
@@ -305,7 +349,7 @@ struct MenuBarView: View {
             }
         }
         .padding()
-        .frame(width: 320)
+        .frame(width: 500)
         .onReceive(countdownTimer) { _ in now = Date() }
     }
     
@@ -321,6 +365,18 @@ struct MenuBarView: View {
             return .orange.opacity(0.12)
         }
         return .purple.opacity(0.1)
+    }
+    
+    // MARK: - 温度颜色
+    
+    private func thermalStateColor(_ state: ProcessInfo.ThermalState) -> Color {
+        switch state {
+        case .nominal:   return .green
+        case .fair:      return .orange
+        case .serious:   return .red
+        case .critical:  return .purple
+        @unknown default: return .secondary
+        }
     }
 }
 

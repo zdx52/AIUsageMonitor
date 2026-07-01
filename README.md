@@ -13,7 +13,7 @@
   <img alt="License" src="https://img.shields.io/github/license/zdx52/AIUsageMonitor">
   <img alt="Swift" src="https://img.shields.io/badge/swift-5.0-orange">
   <img alt="macOS" src="https://img.shields.io/badge/platform-macOS-lightgray">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.4.4-blue">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.4.5-blue">
 </p>
 
 AIUsageMonitor 是一个 macOS 菜单栏轻量级应用，实时监控 DeepSeek、Tavily、OpenCode GO 和 Hindsight 的 API 用量与记忆状态。通过菜单栏常驻，随时掌握 AI 账户状态，支持自动刷新和手动刷新。
@@ -91,6 +91,14 @@ cp -r .build/release/AIUsageMonitor AIUsageMonitor.app/Contents/MacOS/
 ```
 
 ## 更新内容
+
+### v1.4.5
+
+- 🌡️ **温度监控** — 新增笔记本温度显示卡片（弹窗左栏），实时显示电池温度、CPU 使用率、系统热状态
+- 📊 **双栏布局** — 弹窗改为左右两栏：左栏系统信息（温度+Hindsight）、右栏 AI 用量（DeepSeek+Tavily+OpenCode）
+- 📌 **菜单栏信息增强** — 菜单栏左侧新增竖直温度计图标（按热状态变色）以及电池温度、CPU 使用率，按 3 秒刷新
+- ⚙️ **显示设置** — 设置面板新增「🌡️ 温度监控」开关
+- 🗂️ **系统监控** — 标题从「AI 用量监控」改为「系统监控」
 
 ### v1.4.4
 

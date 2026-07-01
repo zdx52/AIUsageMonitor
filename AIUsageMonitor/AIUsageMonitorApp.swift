@@ -22,6 +22,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var networkSpeedTimer: Timer?
     var titleUpdateTimer: Timer?
     var hindsightTimer: Timer?
+    var temperatureTimer: Timer?
     var statusItem: NSStatusItem?
     var popover: NSPopover?
     var eventMonitor: Any?
@@ -44,7 +45,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         
         // 创建弹出面板
         popover = NSPopover()
-        popover?.contentSize = NSSize(width: 320, height: 400)
+        popover?.contentSize = NSSize(width: 500, height: 400)
         popover?.behavior = .transient
         popover?.contentViewController = NSHostingController(
             rootView: MenuBarView().environmentObject(dataStore)
@@ -56,18 +57,36 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             popover.performClose(nil)
         }
         
-        // 每 3 秒更新网速和标题（用颜色表示健康状态）
+        // 每 3 秒更新标题（温度计按温度变色，其余文字保持默认色）
         titleUpdateTimer = Timer.scheduledTimer(withTimeInterval: 3, repeats: true) { [weak self] _ in
             guard let self = self, let button = self.statusItem?.button else { return }
-            let title = self.dataStore.menuBarTitle
-            let color: NSColor
-            switch self.dataStore.healthLevel {
-            case .critical: color = .systemRed
-            case .warning:  color = .systemOrange
-            case .healthy:  color = .labelColor
+            
+            let attrString = NSMutableAttributedString()
+            
+            // 竖直温度计 SF Symbol（按温度变色）
+            if let td = self.dataStore.temperatureData {
+                let img = NSImage(systemSymbolName: "thermometer", accessibilityDescription: nil) ?? NSImage()
+                let attachment = NSTextAttachment()
+                attachment.image = img
+                attachment.bounds = CGRect(x: 0, y: -3, width: 11, height: 17)
+                attrString.append(NSAttributedString(attachment: attachment))
+                attrString.append(NSAttributedString(string: " "))
+                
+                let thermoColor: NSColor
+                switch td.thermalState {
+                case .critical, .serious: thermoColor = .systemRed
+                case .fair:               thermoColor = .systemOrange
+                case .nominal:            thermoColor = .systemGreen
+                @unknown default:         thermoColor = .labelColor
+                }
+                attrString.addAttribute(.foregroundColor, value: thermoColor, range: NSRange(location: 0, length: 1))
             }
-            let attr: [NSAttributedString.Key: Any] = [.foregroundColor: color]
-            button.attributedTitle = NSAttributedString(string: title, attributes: attr)
+            
+            // 其余文字（温度值 + CPU + 网速）保持默认色
+            let restString = NSAttributedString(string: self.dataStore.menuBarTitle, attributes: [.foregroundColor: NSColor.labelColor])
+            attrString.append(restString)
+            
+            button.attributedTitle = attrString
         }
         
         setupRefreshTimer()
@@ -106,6 +125,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         
         // Hindsight 跟随用户设置的刷新间隔
         setupHindsightTimer()
+        
+        // 每 3 秒刷新温度
+        temperatureTimer = Timer.scheduledTimer(withTimeInterval: 3, repeats: true) { [weak self] _ in
+            self?.dataStore.refreshTemperature()
+        }
+        RunLoop.main.add(temperatureTimer!, forMode: .common)
+        
+        // 启动时立即获取一次温度
+        dataStore.refreshTemperature()
         
         // 启动时持续重试直到 Hindsight 就绪（每 3 秒一次，最多等 2 分钟）
         Task { @MainActor in
@@ -184,6 +212,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         networkSpeedTimer?.invalidate()
         titleUpdateTimer?.invalidate()
         hindsightTimer?.invalidate()
+        temperatureTimer?.invalidate()
         if let monitor = eventMonitor {
             NSEvent.removeMonitor(monitor)
         }
