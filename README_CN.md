@@ -13,7 +13,7 @@
   <img alt="License" src="https://img.shields.io/github/license/zdx52/AIUsageMonitor">
   <img alt="Swift" src="https://img.shields.io/badge/swift-5.0-orange">
   <img alt="macOS" src="https://img.shields.io/badge/platform-macOS-lightgray">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.4.6-blue">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.4.7-blue">
 </p>
 
 AIUsageMonitor 是一个 macOS 菜单栏轻量级系统监控工具，实时显示笔记本温度、CPU 使用率、AI 用量（DeepSeek / Tavily / OpenCode GO）和 Hindsight 记忆状态。支持自动刷新和手动刷新。
@@ -89,6 +89,15 @@ cp -r .build/release/AIUsageMonitor AIUsageMonitor.app/Contents/MacOS/
 ```
 
 ## 更新内容
+
+### v1.4.7
+
+- 💥 **修复算术溢出崩溃** — `NetworkSpeedMonitor` 中 UInt64 减法溢出导致 `SIGTRAP`（pip 高速下载时网络接口变化触发）。添加安全减法检查
+- ⏱️ **升级超时保护** — `runUpgrade()` 添加 60 秒超时 + 防重复点击守卫，超时后优雅终止进程
+- 📋 **实时升级控制台** — 看板底部显示实时日志面板，通过管道捕获 stdout 并用 `[STEP:N]` 标记解析进度
+- 🐍 **升级 uv tool 修复** — 升级脚本现在升级 `uv tool`（实际运行路径）而非仅 `pip`（venv）。双镜像策略：阿里云 + 官方 PyPI
+- ⏳ **健康检查延长** — 等待从 20 秒延长到 60 秒（模型加载约需 50s）。每 5 轮输出一次进度提示
+- 🏗️ **v1.4.6 变更**（保留）：
 
 ### v1.4.6
 

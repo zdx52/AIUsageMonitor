@@ -13,6 +13,9 @@ class DashboardWindowController: NSWindowController, NSWindowDelegate, WKNavigat
     private let proxyScript = "hindsight-server.py"
     private let proxyDir: String = Bundle.main.resourcePath!
     private let upgradeScript = "/Users/zdx52/.hermes/scripts/hindsight-upgrade.sh"
+    private let upgradeTimeout: TimeInterval = 60  // 升级超时（uv 很快，10s 内完成）
+    private var isUpgrading = false  // 防重复点击
+    private var upgradePipeBuffer = ""  // 升级输出行缓存
     private var currentVer: String = "?.?.?"
     
     func show() {
@@ -26,39 +29,149 @@ class DashboardWindowController: NSWindowController, NSWindowDelegate, WKNavigat
     }
     
     // MARK: - 升级逻辑
-    
+
     private func runUpgrade() {
-        webView?.evaluateJavaScript("document.getElementById('hs-upgrade-btn').textContent = '升级中...'; document.getElementById('hs-upgrade-btn').disabled = true") { _, _ in }
-        webView?.evaluateJavaScript("document.getElementById('hs-status').textContent = '① 清理缓存 → ② 升级包 → ③ 重启服务...'; document.getElementById('hs-status').style.color = '#8b8fa3'") { _, _ in }
+        // 防重复点击
+        guard !isUpgrading else { return }
+        isUpgrading = true
+        
+        // 清空并显示控制台
+        showUpgradeConsole()
+        appendUpgradeLog("🔄 Hindsight 升级开始\n")
+        updateUpgradeStep(1, "清理缓存")
+        
+        webView?.evaluateJavaScript(
+            "document.getElementById('hs-upgrade-btn').textContent = '升级中...'; document.getElementById('hs-upgrade-btn').disabled = true; " +
+            "document.getElementById('hs-status').textContent = '进行中，看底部日志'; document.getElementById('hs-status').style.color = '#8b8fa3'"
+        ) { _, _ in }
         
         DispatchQueue.global().async { [weak self] in
+            guard let self = self else { return }
             let process = Process()
             process.executableURL = URL(fileURLWithPath: "/bin/bash")
-            process.arguments = [self?.upgradeScript ?? ""]
-            process.standardOutput = FileHandle.nullDevice
-            process.standardError = FileHandle.nullDevice
+            process.arguments = [self.upgradeScript]
+            
+            // 管道捕获输出
+            let outPipe = Pipe()
+            process.standardOutput = outPipe
+            process.standardError = outPipe  // stderr 也合并到 stdout
+            
+            defer {
+                DispatchQueue.main.async { self.isUpgrading = false }
+            }
+            
+            // 逐行读取输出缓冲
+            var lineBuf = ""
+            outPipe.fileHandleForReading.readabilityHandler = { handle in
+                let data = handle.availableData
+                guard !data.isEmpty else { return }
+                guard let chunk = String(data: data, encoding: .utf8) else { return }
+                
+                lineBuf += chunk
+                // 按换行符拆成完整行
+                let lines = lineBuf.components(separatedBy: "\n")
+                if lines.count > 1 {
+                    lineBuf = lines.last ?? ""
+                    let complete = lines.dropLast()
+                    for line in complete {
+                        let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+                        guard !trimmed.isEmpty else { continue }
+                        
+                        if trimmed.hasPrefix("[STEP:") {
+                            // 解析进度标记: [STEP:N] 或 [STEP:DONE] 或 [STEP:FAIL]
+                            // 格式: [STEP:1] 标签文字...  或  [STEP:DONE] 结果文字
+                            let rest = String(trimmed.dropFirst(6)) // 去掉 "[STEP:"
+                            if let endIdx = rest.firstIndex(of: "]") {
+                                let stepStr = String(rest[..<endIdx])
+                                let label = rest[rest.index(after: endIdx)...].trimmingCharacters(in: .whitespacesAndNewlines)
+                                DispatchQueue.main.async {
+                                    if stepStr == "DONE" {
+                                        self.appendUpgradeLog("\n✅ 升级完成！\(label)\n")
+                                    } else if stepStr == "FAIL" {
+                                        self.appendUpgradeLog("\n❌ 升级失败\n")
+                                    } else if let stepNum = Int(stepStr) {
+                                        self.updateUpgradeStep(stepNum, label)
+                                    }
+                                }
+                            }
+                        } else {
+                            // 普通输出行
+                            DispatchQueue.main.async {
+                                self.appendUpgradeLog(trimmed + "\n")
+                            }
+                        }
+                    }
+                }
+            }
             
             do {
+                // 终止处理器必须在 run() 之前设置
+                let group = DispatchGroup()
+                group.enter()
+                process.terminationHandler = { _ in
+                    // 关闭管道，触发 readabilityHandler 最后剩余数据
+                    outPipe.fileHandleForReading.readabilityHandler = nil
+                    group.leave()
+                }
+                
                 try process.run()
-                process.waitUntilExit()
+                
+                // 超时等待
+                let deadline = DispatchTime.now() + self.upgradeTimeout
+                let result = group.wait(timeout: deadline)
+                
+                // 读取管道剩余数据
+                let remaining = outPipe.fileHandleForReading.availableData
+                if !remaining.isEmpty, let tail = String(data: remaining, encoding: .utf8) {
+                    for line in tail.components(separatedBy: "\n") {
+                        let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+                        if !trimmed.isEmpty {
+                            DispatchQueue.main.async {
+                                self.appendUpgradeLog(trimmed + "\n")
+                            }
+                        }
+                    }
+                }
+                
+                if result == .timedOut {
+                    process.terminate()
+                    process.waitUntilExit()
+                    DispatchQueue.main.async {
+                        self.webView?.evaluateJavaScript(
+                            "document.getElementById('hs-upgrade-btn').textContent = '一键升级'; " +
+                            "document.getElementById('hs-upgrade-btn').disabled = false; " +
+                            "document.getElementById('hs-status').textContent = '⏱️ 升级超时（>60s）'; " +
+                            "document.getElementById('hs-status').style.color = '#ef4444'; " +
+                            "hsSetStep('超时')"
+                        ) { _, _ in }
+                        self.appendUpgradeLog("\n⏱️ 升级超时（>60秒）\n")
+                    }
+                    return
+                }
+                
                 let success = process.terminationStatus == 0
                 DispatchQueue.main.async {
-                    self?.webView?.evaluateJavaScript(
+                    self.webView?.evaluateJavaScript(
                         "document.getElementById('hs-upgrade-btn').textContent = '一键升级'; " +
                         "document.getElementById('hs-upgrade-btn').disabled = false; " +
                         "document.getElementById('hs-status').textContent = '\(success ? "升级成功 ✅" : "升级失败 ❌")'; " +
                         "document.getElementById('hs-status').style.color = '\(success ? "#4ade80" : "#ef4444")'"
                     ) { _, _ in }
-                    if success { self?.fetchVersionAndInject(); self?.checkForUpdates() }
+                    if !success {
+                        self.appendUpgradeLog("\n❌ 升级失败（退出码: \(process.terminationStatus)）\n")
+                    }
+                    if success { self.fetchVersionAndInject(); self.checkForUpdates() }
                 }
             } catch {
                 DispatchQueue.main.async {
-                    self?.webView?.evaluateJavaScript(
+                    self.webView?.evaluateJavaScript(
                         "document.getElementById('hs-upgrade-btn').textContent = '一键升级'; " +
                         "document.getElementById('hs-upgrade-btn').disabled = false; " +
                         "document.getElementById('hs-status').textContent = '升级失败'; " +
-                        "document.getElementById('hs-status').style.color = '#ef4444'"
+                        "document.getElementById('hs-status').style.color = '#ef4444'; " +
+                        "hsSetStep('出错')"
                     ) { _, _ in }
+                    self.appendUpgradeLog("\n❌ 升级异常: \(error.localizedDescription)\n")
                 }
             }
         }
@@ -317,6 +430,45 @@ class DashboardWindowController: NSWindowController, NSWindowDelegate, WKNavigat
                 
                 // 插入到 body 最顶部
                 document.body.insertBefore(bar, document.body.firstChild);
+                
+                // ——— 升级控制台（初始隐藏，升级时显示） ———
+                if (!document.getElementById('hs-console-wrap')) {
+                    var cw = document.createElement('div');
+                    cw.id = 'hs-console-wrap';
+                    cw.style.cssText = 'display:none;flex-direction:column;border-top:1px solid #2a2d3a;background:rgba(15,17,23,0.97);flex-shrink:0;max-height:45%;min-height:80px;position:relative;z-index:99999;';
+                    
+                    var ch = document.createElement('div');
+                    ch.id = 'hs-console-header';
+                    ch.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:6px 14px;font-size:11px;color:#6c8cff;background:rgba(26,29,39,0.95);border-bottom:1px solid #2a2d3a;';
+                    ch.innerHTML = '<span>📋 升级日志</span><span id="hs-console-step" style="color:#8b8fa3;">准备中...</span>';
+                    cw.appendChild(ch);
+                    
+                    var co = document.createElement('div');
+                    co.id = 'hs-console';
+                    co.style.cssText = 'flex:1;overflow-y:auto;padding:8px 14px;font-family:Menlo,monospace;font-size:11px;line-height:1.6;color:#c9d1d9;white-space:pre-wrap;word-break:break-all;';
+                    cw.appendChild(co);
+                    
+                    document.body.appendChild(cw);
+                }
+                
+                // ——— JS 接口 ———
+                window.hsAppendLog = function(txt) {
+                    var el = document.getElementById('hs-console');
+                    var wrap = document.getElementById('hs-console-wrap');
+                    if (!el || !wrap) return;
+                    wrap.style.display = 'flex';
+                    el.textContent += txt;
+                    el.scrollTop = el.scrollHeight;
+                };
+                window.hsSetStep = function(label) {
+                    var el = document.getElementById('hs-console-step');
+                    if (el) el.textContent = label;
+                };
+                window.hsClearConsole = function() {
+                    var el = document.getElementById('hs-console');
+                    if (el) el.textContent = '';
+                };
+                
                 console.log('hs: inject done, bar in body:', !!document.getElementById('hs-bar'));
             } catch(e) {
                 console.error('hs: inject failed', e);
@@ -332,6 +484,26 @@ class DashboardWindowController: NSWindowController, NSWindowDelegate, WKNavigat
                 self.webView?.evaluateJavaScript("console.log('hs: post-inject verify ok')") { _, _ in }
             }
         }
+    }
+    
+    // MARK: - 升级控制台
+    
+    private func showUpgradeConsole() {
+        webView?.evaluateJavaScript("hsClearConsole(); hsSetStep('准备中...'); void(0);") { _, _ in }
+    }
+    
+    private func appendUpgradeLog(_ text: String) {
+        // 用 JSON 序列化确保 JS 字符串正确转义
+        guard let data = try? JSONSerialization.data(withJSONObject: [text], options: []),
+              let json = String(data: data, encoding: .utf8) else { return }
+        let safe = String(json.dropFirst().dropLast()) // 去掉 JSON 数组的 [ ]
+        webView?.evaluateJavaScript("hsAppendLog(\(safe))") { _, _ in }
+    }
+    
+    private func updateUpgradeStep(_ step: Int, _ label: String) {
+        let escaped = label.replacingOccurrences(of: "'", with: "\\'")
+        webView?.evaluateJavaScript("hsSetStep('\(escaped)')") { _, _ in }
+        // 不在这里写日志行，由脚本的 [STEP:N] 标记统一输出
     }
     
     private func fetchVersionAndInject() {

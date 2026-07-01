@@ -24,8 +24,11 @@ class NetworkSpeedMonitor {
         let elapsed = current.time.timeIntervalSince(prev.time)
         guard elapsed > 0 else { return nil }
         
-        let rxSpeed = Double(current.rx - prev.rx) / elapsed  // bytes/s
-        let txSpeed = Double(current.tx - prev.tx) / elapsed  // bytes/s
+        // 防止网络接口计数器回绕或接口列表变化导致 UInt64 减法溢出崩溃
+        let rxDelta: UInt64 = current.rx >= prev.rx ? current.rx - prev.rx : 0
+        let txDelta: UInt64 = current.tx >= prev.tx ? current.tx - prev.tx : 0
+        let rxSpeed = Double(rxDelta) / elapsed  // bytes/s
+        let txSpeed = Double(txDelta) / elapsed  // bytes/s
         
         return Speed(
             upload: formatSpeed(txSpeed),

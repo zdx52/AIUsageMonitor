@@ -17,7 +17,7 @@
   <img alt="License" src="https://img.shields.io/github/license/zdx52/AIUsageMonitor">
   <img alt="Swift" src="https://img.shields.io/badge/swift-5.0-orange">
   <img alt="macOS" src="https://img.shields.io/badge/platform-macOS-lightgray">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.4.6-blue">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.4.7-blue">
 </p>
 
 AIUsageMonitor is a lightweight macOS menu bar system monitor that displays real-time laptop temperature, CPU usage, AI service usage (DeepSeek / Tavily / OpenCode GO), and Hindsight memory stats. Supports auto-refresh and manual refresh.
@@ -93,6 +93,15 @@ cp -r .build/release/AIUsageMonitor AIUsageMonitor.app/Contents/MacOS/
 ```
 
 ## Changelog
+
+### v1.4.7
+
+- 💥 **Fix arithmetic overflow crash** — `NetworkSpeedMonitor` UInt64 subtraction overflow when network interfaces change during high-speed downloads, causing `SIGTRAP`. Added safe subtraction with overflow check
+- ⏱️ **Upgrade timeout protection** — Add 60s timeout + anti-double-click guard to `runUpgrade()`. Process is killed gracefully on timeout
+- 📋 **Live upgrade console** — Real-time log panel at bottom of dashboard showing each step's output. Pipe-based stdout capture with `[STEP:N]` markers
+- 🐍 **uv tool upgrade** — Fix upgrade script to upgrade `uv tool` (actual runtime path) not just `pip` (venv). Add Aliyun mirror + official PyPI dual-index strategy
+- ⏳ **Health check extended** — Increase wait loop from 20s to 60s for model loading. Add per-5-iteration progress message
+- 🏗️ **v1.4.6 changes** (restored):
 
 ### v1.4.6
 
