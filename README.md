@@ -96,9 +96,9 @@ cp -r .build/release/AIUsageMonitor AIUsageMonitor.app/Contents/MacOS/
 
 ### v1.4.6
 
-- 🐛 **修复调试日志字符串插值** — 修复 OpenCodeWebViewScraper 中 debug print 因双反斜杠导致变量无法正常显示的问题
-- 🧹 **编译器警告清理** — 消除 8 个 warning（未使用变量、未声明资源文件）
-- 📦 **Package.swift 完善** — 添加 exclude 声明 Info.plist / entitlements / icns 资源文件
+- 🐛 **Fix debug string interpolation** — Fix 12 debug print statements in OpenCodeWebViewScraper where double backslashes prevented variable interpolation
+- 🧹 **Compiler warning cleanup** — Eliminate 8 warnings (unused variables, unhandled resource files)
+- 📦 **Package.swift improvement** — Add exclude declarations for Info.plist / entitlements / icns
 
 ### v1.4.5
 
