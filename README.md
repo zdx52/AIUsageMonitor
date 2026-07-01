@@ -17,7 +17,7 @@
   <img alt="License" src="https://img.shields.io/github/license/zdx52/AIUsageMonitor">
   <img alt="Swift" src="https://img.shields.io/badge/swift-5.0-orange">
   <img alt="macOS" src="https://img.shields.io/badge/platform-macOS-lightgray">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.4.7-blue">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.4.8-blue">
 </p>
 
 AIUsageMonitor is a lightweight macOS menu bar system monitor that displays real-time laptop temperature, CPU usage, AI service usage (DeepSeek / Tavily / OpenCode GO), and Hindsight memory stats. Supports auto-refresh and manual refresh.
@@ -93,6 +93,14 @@ cp -r .build/release/AIUsageMonitor AIUsageMonitor.app/Contents/MacOS/
 ```
 
 ## Changelog
+
+### v1.4.8
+
+- 🔢 **Accurate dashboard counts** — Dashboard now fetches `/api/stats` for memory counts instead of relying on `limit=500` list endpoint. Fixes "500 vs 1108" discrepancy
+- 🔄 **Auto-refresh dashboard** — WKWebView dashboard auto-refreshes stats at user-configured interval (default 5 min), matching the Hindsight card in SwiftUI popover
+- 🏷️ **Consistent tag counts** — Category list pages (`showList`) now use stats API counts, not `allMemories.length`, so tab headers match the home page
+- 🚫 **Cache busting** — Dashboard URL includes timestamp `?_t=...` to bypass WKWebView disk cache. Proxy adds `Cache-Control: no-cache` headers
+- 📦 **Source files tracked** — `hindsight-dashboard.html` and `hindsight-server.py` added to `AIUsageMonitor/Resources/` for future builds
 
 ### v1.4.7
 

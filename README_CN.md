@@ -13,7 +13,7 @@
   <img alt="License" src="https://img.shields.io/github/license/zdx52/AIUsageMonitor">
   <img alt="Swift" src="https://img.shields.io/badge/swift-5.0-orange">
   <img alt="macOS" src="https://img.shields.io/badge/platform-macOS-lightgray">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.4.7-blue">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.4.8-blue">
 </p>
 
 AIUsageMonitor 是一个 macOS 菜单栏轻量级系统监控工具，实时显示笔记本温度、CPU 使用率、AI 用量（DeepSeek / Tavily / OpenCode GO）和 Hindsight 记忆状态。支持自动刷新和手动刷新。
@@ -89,6 +89,14 @@ cp -r .build/release/AIUsageMonitor AIUsageMonitor.app/Contents/MacOS/
 ```
 
 ## 更新内容
+
+### v1.4.8
+
+- 🔢 **看板计数准确** — 看板改用 `/api/stats` 获取记忆统计，不再依赖 `limit=500` 的列表接口。修复「500 vs 1108」不匹配问题
+- 🔄 **看板自动刷新** — WKWebView 看板按用户设置的间隔自动刷新统计（默认 5 分钟），与 SwiftUI 弹窗的 Hindsight 标签保持一致
+- 🏷️ **标签页计数统一** — 分类列表页（`showList`）改用 stats API 计数，标签页表头与首页数字一致
+- 🚫 **缓存彻底绕过** — 看板 URL 加时间戳 `?_t=...` 绕过 WKWebView 磁盘缓存。代理服务器添加 `Cache-Control: no-cache` 响应头
+- 📦 **资源文件追踪** — `hindsight-dashboard.html` 和 `hindsight-server.py` 纳入 `AIUsageMonitor/Resources/` 源码目录
 
 ### v1.4.7
 

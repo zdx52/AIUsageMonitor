@@ -13,7 +13,7 @@ class DashboardWindowController: NSWindowController, NSWindowDelegate, WKNavigat
     private let proxyScript = "hindsight-server.py"
     private let proxyDir: String = Bundle.main.resourcePath!
     private let upgradeScript = "/Users/zdx52/.hermes/scripts/hindsight-upgrade.sh"
-    private let upgradeTimeout: TimeInterval = 60  // 升级超时（uv 很快，10s 内完成）
+    private let upgradeTimeout: TimeInterval = 120  // 升级超时（含模型加载，约需 60-90 秒）
     private var isUpgrading = false  // 防重复点击
     private var upgradePipeBuffer = ""  // 升级输出行缓存
     private var currentVer: String = "?.?.?"
@@ -355,7 +355,9 @@ class DashboardWindowController: NSWindowController, NSWindowDelegate, WKNavigat
         
         waitForProxy { [weak self] in
             guard let self = self, let webView = self.webView else { return }
-            if let url = URL(string: "http://localhost:8080/hindsight-dashboard.html") {
+            // 加时间戳绕过 WKWebView 缓存
+            let t = Int(Date().timeIntervalSince1970 * 1000)
+            if let url = URL(string: "http://localhost:8080/hindsight-dashboard.html?_t=\(t)") {
                 webView.load(URLRequest(url: url))
             }
         }
@@ -368,6 +370,8 @@ class DashboardWindowController: NSWindowController, NSWindowDelegate, WKNavigat
         // 延迟注入，确保 DOM 完全就绪
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
             self?.injectToolbar()
+            // 注入用户设置的刷新间隔
+            self?.injectRefreshInterval()
             // 稍后读取控制台日志确认注入状态
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 self?.webView?.evaluateJavaScript("JSON.stringify({bar:!!document.getElementById('hs-bar'),body:!!document.body,check:!!document.getElementById('hs-check-btn'),upgrade:!!document.getElementById('hs-upgrade-btn')})") { r, _ in
@@ -482,6 +486,24 @@ class DashboardWindowController: NSWindowController, NSWindowDelegate, WKNavigat
                 print("✅ 工具栏注入成功")
                 // 读取 console 日志
                 self.webView?.evaluateJavaScript("console.log('hs: post-inject verify ok')") { _, _ in }
+            }
+        }
+    }
+    
+    /// 注入用户设置的刷新间隔，使看板自动刷新与 Hindsight 标签保持一致
+    private func injectRefreshInterval() {
+        let interval = UserDefaults.standard.object(forKey: "refreshInterval") as? Double ?? 300
+        let intervalMs = Int(interval * 1000)
+        webView?.evaluateJavaScript("""
+            if (window.hsSetRefreshInterval) {
+                window.hsSetRefreshInterval(\(intervalMs));
+                console.log('hs: refresh interval set to \(intervalMs)ms (\(Int(interval / 60))min)');
+            }
+        """) { _, error in
+            if let error = error {
+                print("⚠️ 注入刷新间隔失败: \(error.localizedDescription)")
+            } else {
+                print("✅ 刷新间隔已注入: \(Int(interval / 60)) 分钟 (\(intervalMs)ms)")
             }
         }
     }
