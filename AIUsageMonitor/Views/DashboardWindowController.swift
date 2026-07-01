@@ -100,7 +100,6 @@ class DashboardWindowController: NSWindowController, NSWindowDelegate, WKNavigat
                 formatter.dateFormat = "HH:mm:ss"
                 let now = formatter.string(from: Date())
                 let cur = self.currentVer
-                let urlStr = req.url?.absoluteString ?? ""
                 print("📡 PyPI 查询完成 [\(elapsed)ms] \(httpResp.statusCode) local=\(cur) latest=\(latest)")
                 if latest != cur && cur != "?.?.?" {
                     self.updateStatus("⬆ 新版本 \(latest)（当前 \(cur)）[\(elapsed)ms @\(now)]", color: "#fb923c")

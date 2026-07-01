@@ -10,6 +10,11 @@ let package = Package(
         .executableTarget(
             name: "AIUsageMonitor",
             path: "AIUsageMonitor",
+            exclude: [
+                "Info.plist",
+                "AIUsageMonitor.entitlements",
+                "AppIcon.icns"
+            ],
             resources: [
                 .copy("Assets.xcassets")
             ]

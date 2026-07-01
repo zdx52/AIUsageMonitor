@@ -85,7 +85,6 @@ class LoginWindowNavigationDelegate: NSObject, WKNavigationDelegate {
         let cookieStore = webView.configuration.websiteDataStore.httpCookieStore
         cookieStore.getAllCookies { [weak self] cookies in
             guard let self = self else { return }
-            let hasSessionCookie = cookies.contains { $0.domain.contains("opencode.ai") && !$0.isSessionOnly == false }
             let hasAnyCookie = cookies.contains { $0.domain.contains("opencode.ai") }
             
             if hasAnyCookie {

@@ -94,7 +94,7 @@ class OpenCodeWebViewScraper: NSObject, WKNavigationDelegate, WKScriptMessageHan
             // 判断是否登录页
             let loginKeywords = ["/auth/", "/login", "/signin", "/oauth", "/authorize", "openauth"]
             if loginKeywords.contains(where: { url.contains($0.lowercased()) }) {
-                print("⚠️ OpenCode 需要登录: \\(url)")
+                print("⚠️ OpenCode 需要登录: \(url)")
                 self.doFinish(usage: OpenCodeUsage(needsLogin: true))
                 return
             }
@@ -106,7 +106,7 @@ class OpenCodeWebViewScraper: NSObject, WKNavigationDelegate, WKScriptMessageHan
     
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
         guard webView === self.fetchWebView else { return }
-        print("⚠️ OpenCode 页面加载错误: \\(error.localizedDescription)")
+        print("⚠️ OpenCode 页面加载错误: \(error.localizedDescription)")
     }
     
     // MARK: - 调试 + 提取
@@ -124,10 +124,10 @@ class OpenCodeWebViewScraper: NSObject, WKNavigationDelegate, WKScriptMessageHan
                 let url = info["url"] as? String ?? ""
                 let title = info["title"] as? String ?? ""
                 let text = info["text"] as? String ?? ""
-                print("📄 URL: \\(url)")
-                print("📄 标题: \\(title)")
+                print("📄 URL: \(url)")
+                print("📄 标题: \(title)")
                 if !text.isEmpty {
-                    print("📄 文本(前300): \\(text.prefix(300))")
+                    print("📄 文本(前300): \(text.prefix(300))")
                 }
                 self.capturedPageText = text
             }
@@ -197,7 +197,7 @@ class OpenCodeWebViewScraper: NSObject, WKNavigationDelegate, WKScriptMessageHan
             guard let self = self else { return }
             
             if let error = error {
-                print("❌ JS 错误: \\(error.localizedDescription)")
+                print("❌ JS 错误: \(error.localizedDescription)")
                 // 超时后再试一次
                 DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
                     guard let wv = self.fetchWebView else { return }
@@ -215,7 +215,7 @@ class OpenCodeWebViewScraper: NSObject, WKNavigationDelegate, WKScriptMessageHan
             // 检查 API 数据
             if let api = parsed["apiData"] as? [String: Any] {
                 if api["usagePercent"] != nil || api["remaining"] != nil || api["plan"] != nil {
-                    print("📊 API 数据: \\(api)")
+                    print("📊 API 数据: \(api)")
                     let usage = OpenCodeUsage(
                         useBalance: api["useBalance"] as? Bool ?? false,
                         rpcUsagePercent: api["usagePercent"] as? Double,
@@ -236,7 +236,7 @@ class OpenCodeWebViewScraper: NSObject, WKNavigationDelegate, WKScriptMessageHan
             let mp = parsed["monthlyPercent"] as? Double
             
             if rp != nil || wp != nil || mp != nil {
-                print("📊 页面提取: rolling=\\(rp ?? -1) weekly=\\(wp ?? -1) monthly=\\(mp ?? -1)")
+                print("📊 页面提取: rolling=\(rp ?? -1) weekly=\(wp ?? -1) monthly=\(mp ?? -1)")
                 let usage = OpenCodeUsage(
                     rollingPercent: rp,
                     weeklyPercent: wp,
@@ -248,7 +248,7 @@ class OpenCodeWebViewScraper: NSObject, WKNavigationDelegate, WKScriptMessageHan
             
             // 没有数据 - 打印收到的内容帮助调试
             let bodyText = parsed["bodyText"] as? String ?? ""
-            print("⚠️ 未提取到数据, 页面文本(500): \\(bodyText.prefix(500))")
+            print("⚠️ 未提取到数据, 页面文本(500): \(bodyText.prefix(500))")
             
             // 3秒后重试（可能数据还没加载完）
             DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in
@@ -271,7 +271,7 @@ class OpenCodeWebViewScraper: NSObject, WKNavigationDelegate, WKScriptMessageHan
             // 尝试解析为标准 JSON 对象
             if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
                 capturedAPIData[url] = json
-                print("📡 API 拦截: \\(url)")
+                print("📡 API 拦截: \(url)")
                 if let usage = parseCapturedData(json) {
                     doFinish(usage: usage)
                 }
@@ -283,7 +283,7 @@ class OpenCodeWebViewScraper: NSObject, WKNavigationDelegate, WKScriptMessageHan
                jsonArray.count >= 2,
                let resultObj = jsonArray[1] as? [String: Any] {
                 capturedAPIData[url] = resultObj
-                print("📡 API 拦截(数组): \\(url)")
+                print("📡 API 拦截(数组): \(url)")
                 if let usage = parseCapturedData(resultObj) {
                     doFinish(usage: usage)
                 }
@@ -297,7 +297,7 @@ class OpenCodeWebViewScraper: NSObject, WKNavigationDelegate, WKScriptMessageHan
         if let data = try? JSONSerialization.data(withJSONObject: json) {
             if let rpc = try? JSONDecoder().decode(OpenCodeRPCResponse.self, from: data) {
                 if rpc.usagePercent != nil || rpc.remaining != nil || rpc.plan != nil || rpc.resetInSec != nil {
-                    print("📊 解析成功: \\(rpc)")
+                    print("📊 解析成功: \(rpc)")
                     return OpenCodeUsage(
                         useBalance: rpc.useBalance ?? false,
                         rpcUsagePercent: rpc.usagePercent,
