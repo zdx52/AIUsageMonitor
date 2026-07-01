@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  macOS 菜单栏 AI 用量监控工具
+  macOS 菜单栏系统监控工具 / macOS Menu Bar System Monitor
 </p>
 
 <p align="center">
@@ -16,35 +16,40 @@
   <img alt="Version" src="https://img.shields.io/badge/version-1.4.5-blue">
 </p>
 
-AIUsageMonitor 是一个 macOS 菜单栏轻量级应用，实时监控 DeepSeek、Tavily、OpenCode GO 和 Hindsight 的 API 用量与记忆状态。通过菜单栏常驻，随时掌握 AI 账户状态，支持自动刷新和手动刷新。
+AIUsageMonitor 是一个 macOS 菜单栏轻量级系统监控工具，实时显示笔记本温度、CPU 使用率、AI 用量（DeepSeek / Tavily / OpenCode GO）和 Hindsight 记忆状态。支持自动刷新和手动刷新。
 
-## 快速使用
+AIUsageMonitor is a lightweight macOS menu bar system monitor that displays real-time laptop temperature, CPU usage, AI service usage (DeepSeek / Tavily / OpenCode GO), and Hindsight memory stats. Supports auto-refresh and manual refresh.
+
+## 快速使用 / Quick Start
 
 从 [GitHub Releases](https://github.com/zdx52/AIUsageMonitor/releases) 下载最新版：
 
-- `AIUsageMonitor.dmg` — macOS 通用安装包
+Download the latest release from GitHub Releases:
 
-安装后：
+- `AIUsageMonitor.dmg` — macOS 通用安装包 / Universal macOS installer
 
-1. 双击挂载 DMG，将 `AIUsageMonitor.app` 拖入 Applications 文件夹
-2. 双击 `AIUsageMonitor.app` 启动
-3. 菜单栏出现图标，点击即可查看用量
-4. 在设置面板中配置 DeepSeek、Tavily 和 OpenCode 的 API Key / 工作区 URL
+安装后 / After installation:
 
-> ⚠️ **macOS 26+ 用户**：由于系统 Gatekeeper 限制，首次启动请使用**右键 → 打开**方式，或先去系统设置 > 隐私与安全性中允许运行。
+1. 双击挂载 DMG，将 `AIUsageMonitor.app` 拖入 Applications 文件夹 / Mount the DMG and drag `AIUsageMonitor.app` to Applications
+2. 双击 `AIUsageMonitor.app` 启动 / Launch AIUsageMonitor
+3. 菜单栏出现图标，点击即可查看用量 / Click the menu bar icon to view data
+4. 在设置面板中配置 API Key / 工作区 URL / Configure API keys & workspace URL in Settings
 
-## 功能特性
+> ⚠️ **macOS 26+ 用户**：由于系统 Gatekeeper 限制，首次启动请使用**右键 → 打开**方式，或先去系统设置 > 隐私与安全性中允许运行。/ If Gatekeeper blocks the app, **right-click → Open** or allow it in System Settings > Privacy & Security.
 
-- 🐋 **DeepSeek 余额监控** — 实时查询账户总余额、赠送余额、充值余额
-- 🔍 **Tavily 用量监控** — 查看月度额度、已用和剩余额度
-- 🔄 **OpenCode GO 用量监控** — RPC 查询用量百分比，支持 WKWebView 内嵌登录与浏览器备选，独立重置倒计时
-- 🧠 **Hindsight 记忆看板** — 实时显示记忆总数、经验、观察和世界知识统计，支持 WKWebView 内嵌看板
-- 🌐 **菜单栏网速显示** — 实时显示 `↓下载 ↑上传`，3 秒刷新，紧凑显示
-- 🟢 **动态健康提示** — 文字颜色标示：健康默认色 / 预警橙色 / 严重红色
-- 🔒 **Keychain 安全存储** — API Key 存储在 macOS 钥匙串，不明文保存
-- ⏱️ **自定义自动刷新** — 可自定义刷新间隔（1-30 分钟），设置即生效
-- 👁️ **显示开关** — 可在设置中分别控制 DeepSeek/Tavily/OpenCode/Hindsight 的显示与隐藏
-- ⚙️ **设置面板** — 可视化配置 API Key、OpenCode 工作区和刷新间隔
+## 功能特性 / Features
+
+- 🌡️ **温度监控** / **Temperature Monitor** — 实时显示电池温度、CPU 使用率、系统热状态 / Real-time battery temp, CPU usage & thermal state
+- 🐋 **DeepSeek 余额监控** / **Balance Monitor** — 实时查询账户总余额、赠送余额、充值余额 / Check total, granted & topped-up balance
+- 🔍 **Tavily 用量监控** / **Usage Monitor** — 查看月度额度、已用和剩余额度 / Monthly quota, used & remaining credits
+- 🔄 **OpenCode GO 用量监控** / **Usage Monitor** — RPC 查询用量百分比，支持 WKWebView 内嵌登录与浏览器备选 / RPC usage % with WKWebView login & browser fallback
+- 🧠 **Hindsight 记忆看板** / **Memory Dashboard** — 实时显示记忆总数、经验、观察和世界知识统计 / Total memories, experiences, observations & world facts
+- 🌐 **菜单栏网速显示** / **Network Speed** — 实时显示 `↓下载 ↑上传`，3 秒刷新 / Real-time ↓↑ network speed, 3s refresh
+- 🟢 **动态健康提示** / **Health Indicator** — 文字颜色标示：健康默认色/预警橙色/严重红色 / Color-coded: default/orange/red for health status
+- 🔒 **Keychain 安全存储** / **Secure Storage** — API Key 存储在 macOS 钥匙串 / API keys stored in macOS Keychain
+- ⏱️ **自定义自动刷新** / **Auto Refresh** — 可自定义刷新间隔（1-30 分钟）/ Configurable refresh interval (1-30 min)
+- 👁️ **显示开关** / **Show/Hide Cards** — 可在设置中分别控制各模块的显示与隐藏 / Toggle each module's visibility in settings
+- ⚙️ **设置面板** / **Settings Panel** — 可视化配置 API Key、工作区和刷新间隔 / Visual config for API keys, workspace & refresh
 
 ## 数据说明
 
@@ -94,11 +99,11 @@ cp -r .build/release/AIUsageMonitor AIUsageMonitor.app/Contents/MacOS/
 
 ### v1.4.5
 
-- 🌡️ **温度监控** — 新增笔记本温度显示卡片（弹窗左栏），实时显示电池温度、CPU 使用率、系统热状态
-- 📊 **双栏布局** — 弹窗改为左右两栏：左栏系统信息（温度+Hindsight）、右栏 AI 用量（DeepSeek+Tavily+OpenCode）
-- 📌 **菜单栏信息增强** — 菜单栏左侧新增竖直温度计图标（按热状态变色）以及电池温度、CPU 使用率，按 3 秒刷新
-- ⚙️ **显示设置** — 设置面板新增「🌡️ 温度监控」开关
-- 🗂️ **系统监控** — 标题从「AI 用量监控」改为「系统监控」
+- 🌡️ **温度监控** / **Temperature Monitor** — 新增笔记本温度显示卡片，实时显示电池温度、CPU 使用率、系统热状态 / New temperature card with battery temp, CPU usage & thermal state
+- 📊 **双栏布局** / **Dual-Column Layout** — 弹窗改为左右两栏：左栏系统信息，右栏 AI 用量 / Popover split into system (left) and AI usage (right) columns
+- 📌 **菜单栏信息增强** / **Enhanced Menu Bar** — 菜单栏新增竖直温度计图标、温度、CPU 使用率，3 秒刷新 / Vertical thermometer icon, temp & CPU in menu bar, 3s refresh
+- ⚙️ **显示设置** / **Settings** — 设置面板新增温度监控开关 / New temperature toggle in settings
+- 🗂️ **系统监控** / **System Monitor** — 标题从「AI 用量监控」改为「系统监控」/ Title changed from AI Usage Monitor to System Monitor
 
 ### v1.4.4
 
