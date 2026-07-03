@@ -5,9 +5,11 @@ class TavilyService {
     static func fetchUsage() async -> TavilyUsage? {
         // 从 Keychain 读取 API Key
         guard let apiKey = KeychainHelper.get(key: "tavily_api_key"), !apiKey.isEmpty else {
+            print("⚠️ Tavily: API Key 未设置")
             return nil
         }
         
+        print("🔑 Tavily: key found, making API call...")
         guard let url = URL(string: "https://api.tavily.com/usage") else {
             return nil
         }

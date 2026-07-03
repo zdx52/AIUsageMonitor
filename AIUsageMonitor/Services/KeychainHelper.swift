@@ -12,36 +12,22 @@ class KeychainHelper {
             return
         }
         
-        // 先删除所有旧条目（兼容多个 service name）
-        for name in [Self.serviceName, Bundle.main.bundleIdentifier ?? Self.serviceName] {
-            let delQuery: [String: Any] = [
-                kSecClass as String: kSecClassGenericPassword,
-                kSecAttrService as String: name,
-                kSecAttrAccount as String: key
-            ]
-            SecItemDelete(delQuery as CFDictionary)
-        }
+        // 先删除旧条目
+        let delQuery: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: Self.serviceName,
+            kSecAttrAccount as String: key
+        ]
+        SecItemDelete(delQuery as CFDictionary)
         
-        // 使用固定 service name 保存，并允许当前 App 无提示访问
-        var query: [String: Any] = [
+        // 使用固定 service name 保存
+        let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: Self.serviceName,
             kSecAttrAccount as String: key,
             kSecValueData as String: data,
             kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly
         ]
-        
-        // 添加访问控制：允许当前 App 无提示访问
-        var trustedApp: SecTrustedApplication?
-        if SecTrustedApplicationCreateFromPath(nil, &trustedApp) == errSecSuccess,
-           let app = trustedApp {
-            let accessList = [app] as CFArray
-            var access: SecAccess?
-            if SecAccessCreate(Self.serviceName as CFString, accessList, &access) == errSecSuccess,
-               let secAccess = access {
-                query[kSecAttrAccess as String] = secAccess
-            }
-        }
         
         let status = SecItemAdd(query as CFDictionary, nil)
         if status != errSecSuccess {

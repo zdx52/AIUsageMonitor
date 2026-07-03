@@ -54,10 +54,15 @@ struct MenuBarView: View {
                             backgroundColor: .red.opacity(0.08)
                         ) {
                             if let td = dataStore.temperatureData {
-                                if let temp = td.batteryTemperature {
-                                    UsageRow(label: "电池温度", value: String(format: "%.1f°C", temp))
+                                if let temp = td.cpuTemperature ?? td.batteryTemperature {
+                                    UsageRow(label: "CPU温度", value: String(format: "%.1f°C", temp))
                                 } else {
-                                    UsageRow(label: "电池温度", value: "—")
+                                    UsageRow(label: "CPU温度", value: "—")
+                                }
+                                if let gpuTemp = td.gpuTemperature {
+                                    UsageRow(label: "GPU温度", value: String(format: "%.1f°C", gpuTemp))
+                                } else {
+                                    UsageRow(label: "GPU温度", value: "—")
                                 }
                                 UsageRow(label: "CPU 使用", value: td.cpuUsage != nil ? String(format: "%.0f%%", td.cpuUsage!) : "—")
                                 HStack(spacing: 4) {

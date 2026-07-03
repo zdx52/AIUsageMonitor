@@ -17,7 +17,7 @@
   <img alt="License" src="https://img.shields.io/github/license/zdx52/AIUsageMonitor">
   <img alt="Swift" src="https://img.shields.io/badge/swift-5.0-orange">
   <img alt="macOS" src="https://img.shields.io/badge/platform-macOS-lightgray">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.4.8-blue">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.4.9-blue">
 </p>
 
 AIUsageMonitor is a lightweight macOS menu bar system monitor that displays real-time laptop temperature, CPU usage, AI service usage (DeepSeek / Tavily / OpenCode GO), and Hindsight memory stats. Supports auto-refresh and manual refresh.
@@ -94,54 +94,10 @@ cp -r .build/release/AIUsageMonitor AIUsageMonitor.app/Contents/MacOS/
 
 ## Changelog
 
-### v1.4.8
+### v1.4.9
 
-- 🔢 **Accurate dashboard counts** — Dashboard now fetches `/api/stats` for memory counts instead of relying on `limit=500` list endpoint. Fixes "500 vs 1108" discrepancy
-- 🔄 **Auto-refresh dashboard** — WKWebView dashboard auto-refreshes stats at user-configured interval (default 5 min), matching the Hindsight card in SwiftUI popover
-- 🏷️ **Consistent tag counts** — Category list pages (`showList`) now use stats API counts, not `allMemories.length`, so tab headers match the home page
-- 🚫 **Cache busting** — Dashboard URL includes timestamp `?_t=...` to bypass WKWebView disk cache. Proxy adds `Cache-Control: no-cache` headers
-- 📦 **Source files tracked** — `hindsight-dashboard.html` and `hindsight-server.py` added to `AIUsageMonitor/Resources/` for future builds
-
-### v1.4.7
-
-- 💥 **Fix arithmetic overflow crash** — `NetworkSpeedMonitor` UInt64 subtraction overflow when network interfaces change during high-speed downloads, causing `SIGTRAP`. Added safe subtraction with overflow check
-- ⏱️ **Upgrade timeout protection** — Add 60s timeout + anti-double-click guard to `runUpgrade()`. Process is killed gracefully on timeout
-- 📋 **Live upgrade console** — Real-time log panel at bottom of dashboard showing each step's output. Pipe-based stdout capture with `[STEP:N]` markers
-- 🐍 **uv tool upgrade** — Fix upgrade script to upgrade `uv tool` (actual runtime path) not just `pip` (venv). Add Aliyun mirror + official PyPI dual-index strategy
-- ⏳ **Health check extended** — Increase wait loop from 20s to 60s for model loading. Add per-5-iteration progress message
-- 🏗️ **v1.4.6 changes** (restored):
-
-### v1.4.6
-
-- 🐛 **Fix debug string interpolation** — Fix 12 debug print statements in OpenCodeWebViewScraper where double backslashes prevented variable interpolation
-- 🧹 **Compiler warning cleanup** — Eliminate 8 warnings (unused variables, unhandled resource files)
-- 📦 **Package.swift improvement** — Add exclude declarations for Info.plist / entitlements / icns
-
-### v1.4.5
-
-- 🌡️ **Temperature Monitor** — New temperature card with battery temp, CPU usage & thermal state. Vertical thermometer icon (color-coded) and live data in menu bar
-- 📊 **Dual-Column Layout** — Popover split into system (left) and AI usage (right) columns
-- 📌 **Enhanced Menu Bar** — Thermometer icon, temp & CPU in menu bar, 3s refresh
-- ⚙️ **Settings** — New temperature toggle in settings panel
-- 🗂️ **System Monitor** — Title changed from "AI Usage Monitor" to "System Monitor"
-
-### v1.4.4
-
-- ⏱️ Hindsight startup wait extended to 2 minutes — app retries up to 2 min for Hindsight readiness after restart
-
-### v1.4.3
-
-- 🐛 OpenCode login cookie sync fix — sync cookies to HTTPCookieStorage immediately on login
-
-### v1.4.2
-
-- 🧠 Hindsight version display in dashboard title + sidebar
-- 🔄 Auto update check from PyPI every 2 hours
-- ⬆ New version alert with orange label
-- 📐 Responsive dashboard grid layout (1/2/3 columns)
-- 🧩 Mental model always visible (grayed out when empty)
-- 🐛 API field mapping fixes
-- 🏷️ Unified version across Info.plist / README / GitHub
-- 🎨 Refactored OpenCode login UI, removed 108 lines of duplicate code
-- 🔧 Settings panel z-order fix — popover closes before opening settings
-- 🏷️ LSUIElement=true, pure menu bar app (no Dock icon)
+- 🔑 **Fix Keychain access** — Remove `SecAccess` restriction that locked API keys to specific app path. Keys now readable across builds (debug/release) and re-signing
+- 🌡️ **CPU & GPU temperature** — New `smctemp`-based CPU/GPU temperature readings. Menu bar now shows CPU temp (replaces battery temp) plus GPU temp
+- 📝 **Better error handling** — DeepSeek `fetchBalance()` now logs HTTP status code and response body on non-200 responses, making API failures debuggable
+- 🗑️ **Cleaner Settings** — Remove temperature visibility toggle (temperature always shown)
+- 🔧 **Code cleanup** — Remove unused `showTemperature` state, simplify KeychainHelper save flow

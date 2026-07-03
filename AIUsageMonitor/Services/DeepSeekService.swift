@@ -4,10 +4,11 @@ class DeepSeekService {
     
     static func fetchBalance() async -> DeepSeekUsage? {
         guard let apiKey = KeychainHelper.get(key: "deepseek_api_key"), !apiKey.isEmpty else {
-            print("⚠️ DeepSeek API Key 未设置")
+            print("⚠️ DeepSeek: API Key 未设置")
             return nil
         }
         
+        print("🔑 DeepSeek: key found, making API call...")
         guard let url = URL(string: "https://api.deepseek.com/user/balance") else {
             return nil
         }
@@ -21,9 +22,14 @@ class DeepSeekService {
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
             
-            guard let httpResponse = response as? HTTPURLResponse,
-                  httpResponse.statusCode == 200 else {
-                print("❌ DeepSeek API 返回错误")
+            guard let httpResponse = response as? HTTPURLResponse else {
+                print("❌ DeepSeek API 返回非 HTTP 响应")
+                return nil
+            }
+            
+            guard httpResponse.statusCode == 200 else {
+                let body = String(data: data, encoding: .utf8) ?? "no body"
+                print("❌ DeepSeek API 返回错误: \(httpResponse.statusCode), body: \(body)")
                 return nil
             }
             
@@ -31,6 +37,7 @@ class DeepSeekService {
             let balance = try decoder.decode(DeepSeekBalance.self, from: data)
             
             guard let firstInfo = balance.balanceInfos.first else {
+                print("❌ DeepSeek: balanceInfos 为空")
                 return nil
             }
             

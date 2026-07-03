@@ -8,6 +8,8 @@ struct TemperatureData {
     let thermalState: ProcessInfo.ThermalState
     let cpuUsage: Double?  // 0-100%
     let batteryTemperature: Double?  // 摄氏度
+    let cpuTemperature: Double?  // CPU 温度（通过 smctemp -c 读取）
+    let gpuTemperature: Double?  // GPU 温度（通过 smctemp -g 读取）
 
     var thermalStateLabel: String {
         switch thermalState {
@@ -42,8 +44,56 @@ class TemperatureMonitor {
         TemperatureData(
             thermalState: ProcessInfo.processInfo.thermalState,
             cpuUsage: getCPUUsage(),
-            batteryTemperature: getBatteryTemperature()
+            batteryTemperature: getBatteryTemperature(),
+            cpuTemperature: getCPUTemperature(),
+            gpuTemperature: getGPUTemperature()
         )
+    }
+
+    /// 通过 smctemp -c 获取 CPU 温度
+    private func getCPUTemperature() -> Double? {
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+        task.arguments = ["smctemp", "-c"]
+
+        let pipe = Pipe()
+        task.standardOutput = pipe
+        task.standardError = nil
+
+        do {
+            try task.run()
+            task.waitUntilExit()
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            guard !data.isEmpty else { return nil }
+            let output = String(data: data, encoding: .utf8)?
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            return Double(output ?? "")
+        } catch {
+            return nil
+        }
+    }
+
+    /// 通过 smctemp -g 获取 GPU 温度
+    private func getGPUTemperature() -> Double? {
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+        task.arguments = ["smctemp", "-g"]
+
+        let pipe = Pipe()
+        task.standardOutput = pipe
+        task.standardError = nil
+
+        do {
+            try task.run()
+            task.waitUntilExit()
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            guard !data.isEmpty else { return nil }
+            let output = String(data: data, encoding: .utf8)?
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            return Double(output ?? "")
+        } catch {
+            return nil
+        }
     }
 
     /// 通过 Mach API 获取实时 CPU 使用率（两次采样差值）

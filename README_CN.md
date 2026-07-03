@@ -13,7 +13,7 @@
   <img alt="License" src="https://img.shields.io/github/license/zdx52/AIUsageMonitor">
   <img alt="Swift" src="https://img.shields.io/badge/swift-5.0-orange">
   <img alt="macOS" src="https://img.shields.io/badge/platform-macOS-lightgray">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.4.8-blue">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.4.9-blue">
 </p>
 
 AIUsageMonitor 是一个 macOS 菜单栏轻量级系统监控工具，实时显示笔记本温度、CPU 使用率、AI 用量（DeepSeek / Tavily / OpenCode GO）和 Hindsight 记忆状态。支持自动刷新和手动刷新。
@@ -90,56 +90,10 @@ cp -r .build/release/AIUsageMonitor AIUsageMonitor.app/Contents/MacOS/
 
 ## 更新内容
 
-### v1.4.8
+### v1.4.9
 
-- 🔢 **看板计数准确** — 看板改用 `/api/stats` 获取记忆统计，不再依赖 `limit=500` 的列表接口。修复「500 vs 1108」不匹配问题
-- 🔄 **看板自动刷新** — WKWebView 看板按用户设置的间隔自动刷新统计（默认 5 分钟），与 SwiftUI 弹窗的 Hindsight 标签保持一致
-- 🏷️ **标签页计数统一** — 分类列表页（`showList`）改用 stats API 计数，标签页表头与首页数字一致
-- 🚫 **缓存彻底绕过** — 看板 URL 加时间戳 `?_t=...` 绕过 WKWebView 磁盘缓存。代理服务器添加 `Cache-Control: no-cache` 响应头
-- 📦 **资源文件追踪** — `hindsight-dashboard.html` 和 `hindsight-server.py` 纳入 `AIUsageMonitor/Resources/` 源码目录
-
-### v1.4.7
-
-- 💥 **修复算术溢出崩溃** — `NetworkSpeedMonitor` 中 UInt64 减法溢出导致 `SIGTRAP`（pip 高速下载时网络接口变化触发）。添加安全减法检查
-- ⏱️ **升级超时保护** — `runUpgrade()` 添加 60 秒超时 + 防重复点击守卫，超时后优雅终止进程
-- 📋 **实时升级控制台** — 看板底部显示实时日志面板，通过管道捕获 stdout 并用 `[STEP:N]` 标记解析进度
-- 🐍 **升级 uv tool 修复** — 升级脚本现在升级 `uv tool`（实际运行路径）而非仅 `pip`（venv）。双镜像策略：阿里云 + 官方 PyPI
-- ⏳ **健康检查延长** — 等待从 20 秒延长到 60 秒（模型加载约需 50s）。每 5 轮输出一次进度提示
-- 🏗️ **v1.4.6 变更**（保留）：
-
-### v1.4.6
-
-- 🐛 **修复调试日志字符串插值** — 修复 OpenCodeWebViewScraper 中 debug print 因双反斜杠导致变量无法正常显示的问题
-- 🧹 **编译器警告清理** — 消除 8 个 warning（未使用变量、未声明资源文件）
-- 📦 **Package.swift 完善** — 添加 exclude 声明 Info.plist / entitlements / icns 资源文件
-
-### v1.4.5
-
-- 🌡️ **温度监控** — 新增笔记本温度显示卡片，实时显示电池温度、CPU 使用率、系统热状态。菜单栏新增竖直温度计图标（按温度变色）和实时数据
-- 📊 **双栏布局** — 弹窗改为左右两栏：左栏系统信息（温度+Hindsight）、右栏 AI 用量（DeepSeek+Tavily+OpenCode）
-- 📌 **菜单栏信息增强** — 菜单栏新增温度计图标、温度、CPU 使用率，3 秒刷新
-- ⚙️ **显示设置** — 设置面板新增温度监控开关
-- 🗂️ **系统监控** — 标题从「AI 用量监控」改为「系统监控」
-
-### v1.4.4
-
-- ⏱️ **Hindsight 启动等待延长至 2 分钟** — 重启后 app 最多等 2 分钟直到 Hindsight 就绪，不再因为 PostgreSQL/模型加载慢而错过
-
-### v1.4.3
-
-- 🐛 **OpenCode 登录 cookie 同步修复** — 登录成功时立即同步 cookie 到 HTTPCookieStorage，刷新不再报"登录已过期"
-
-### v1.4.2
-
-- 🧠 **Hindsight 版本显示** — 看板标题栏 + 右侧面板同时显示当前版本号
-- 🔄 **自动更新检查** — 左侧看板每 2 小时自动查 PyPI，右侧面板每次刷新时带缓存检查
-- ⬆ **新版本提醒** — 有新版本时橙色标签/文字提示升级
-- 📐 **看板自适应布局** — 网格列数随窗口宽度自动适配（窄→1列 / 中→2列 / 宽→3列）
-- 🧩 **心智模型始终显示** — 即使 0 条也灰显入口
-- 🐛 **API 字段适配** — 修正 fact_type / date 字段映射，数据正确显示
-- 🏷️ **版本号统一** — Info.plist / README / GitHub 统一为 v1.4.2
-- 🐛 **Info.plist 构建变量修复** — 替换 $(EXECUTABLE_NAME) 等为字面值，修复 bundle 读取
-- 🎨 **OpenCode 登录 UI 精简** — 提取公共组件消除 108 行重复代码
-- 🧹 **代码清理** — 移除冷 msg handler、统一版本号扩展、proxyDir 硬编码修复、catch 日志化
-- 🔧 **设置面板遮挡修复** — 点击设置/看板时弹窗自动关闭，不遮挡新面板
-- 🏷️ **Dock 图标隐藏** — 添加 LSUIElement=true，纯菜单栏应用
+- 🔑 **修复 Keychain 访问限制** — 移除 `SecAccess` 路径锁定，API Key 在不同构建版本间都可正常读取
+- 🌡️ **CPU & GPU 温度** — 新增基于 `smctemp` 的 CPU/GPU 温度读取，菜单栏显示 CPU 温度（替代电池温度）和 GPU 温度
+- 📝 **更好的错误处理** — DeepSeek `fetchBalance()` 在 API 返回非 200 时输出状态码和响应 body，便于排查问题
+- 🗑️ **设置精简** — 移除温度显示开关（温度始终显示）
+- 🔧 **代码清理** — 移除未使用的 `showTemperature` 状态，简化 KeychainHelper 保存流程

@@ -78,8 +78,10 @@ class DataStore: ObservableObject {
         async let ocUsage = fetchOpenCodeUsage()
         
         let ds = await dsBalance
+        print("📊 refreshAll: DeepSeek balance = \(ds?.totalBalance != nil ? String(ds!.totalBalance) : "nil")")
         let dsUsageData = await dsUsage
         let tavilyData = await tvUsage
+        print("📊 refreshAll: Tavily data = \(tavilyData != nil ? "\(tavilyData!.plan) used:\(tavilyData!.creditsUsed)/\(tavilyData!.monthlyLimit)" : "nil")")
         let openCodeData = await ocUsage
         
         // 合并 DeepSeek 余额和今日消耗
@@ -138,6 +140,14 @@ class DataStore: ObservableObject {
         
         self.updateHealthLevel()
         self.updateMenuBarTitle()
+        
+        // 调试：在菜单栏标题显示是否有数据
+        let dsStatus = self.deepSeekBalance != nil ? "DS:¥\(self.deepSeekBalance!.totalBalance)" : "DS:nil"
+        let tvStatus = self.tavilyUsage != nil ? "TV:\(self.tavilyUsage!.creditsUsed)" : "TV:nil"
+        print("DEBUG \(dsStatus) \(tvStatus)")
+        if self.menuBarTitle.isEmpty || !self.menuBarTitle.contains("¥") {
+            self.menuBarTitle = "\(dsStatus) \(tvStatus) \(self.menuBarTitle)"
+        }
     }
     
 
@@ -227,10 +237,10 @@ class DataStore: ObservableObject {
     func updateNetworkSpeed() {
         let speed = NetworkSpeedMonitor.shared.getSpeed()
         networkSpeed = speed
-        
+
         var parts: [String] = []
         if let td = temperatureData {
-            if let temp = td.batteryTemperature {
+            if let temp = td.cpuTemperature ?? td.batteryTemperature {
                 parts.append("\(String(format: "%.1f", temp))°C")
             }
             if let cpu = td.cpuUsage {
