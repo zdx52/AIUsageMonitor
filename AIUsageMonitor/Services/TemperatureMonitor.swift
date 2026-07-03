@@ -50,42 +50,40 @@ class TemperatureMonitor {
         )
     }
 
+    /// smctemp 的候选路径（GUI 应用默认 PATH 不含 /usr/local/bin）
+    private let smctempPaths = [
+        "/usr/local/bin/smctemp",
+        "/opt/homebrew/bin/smctemp",
+    ]
+
     /// 通过 smctemp -c 获取 CPU 温度
     private func getCPUTemperature() -> Double? {
-        let task = Process()
-        task.executableURL = URL(fileURLWithPath: "/usr/bin/env")
-        task.arguments = ["smctemp", "-c"]
-
-        let pipe = Pipe()
-        task.standardOutput = pipe
-        task.standardError = nil
-
-        do {
-            try task.run()
-            task.waitUntilExit()
-            let data = pipe.fileHandleForReading.readDataToEndOfFile()
-            guard !data.isEmpty else { return nil }
-            let output = String(data: data, encoding: .utf8)?
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-            return Double(output ?? "")
-        } catch {
-            return nil
-        }
+        return runSmctemp(arg: "-c")
     }
 
     /// 通过 smctemp -g 获取 GPU 温度
     private func getGPUTemperature() -> Double? {
+        return runSmctemp(arg: "-g")
+    }
+
+    /// 用绝对路径调用 smctemp，不受 GUI 最小 PATH 影响
+    private func runSmctemp(arg: String) -> Double? {
+        guard let smctempPath = smctempPaths.first(where: { FileManager.default.isExecutableFile(atPath: $0) }) else {
+            print("⚠️ smctemp 未找到，尝试路径: \(smctempPaths)")
+            return nil
+        }
         let task = Process()
-        task.executableURL = URL(fileURLWithPath: "/usr/bin/env")
-        task.arguments = ["smctemp", "-g"]
+        task.executableURL = URL(fileURLWithPath: smctempPath)
+        task.arguments = [arg]
 
         let pipe = Pipe()
         task.standardOutput = pipe
-        task.standardError = nil
+        task.standardError = Pipe()
 
         do {
             try task.run()
             task.waitUntilExit()
+            guard task.terminationStatus == 0 else { return nil }
             let data = pipe.fileHandleForReading.readDataToEndOfFile()
             guard !data.isEmpty else { return nil }
             let output = String(data: data, encoding: .utf8)?

@@ -140,14 +140,6 @@ class DataStore: ObservableObject {
         
         self.updateHealthLevel()
         self.updateMenuBarTitle()
-        
-        // 调试：在菜单栏标题显示是否有数据
-        let dsStatus = self.deepSeekBalance != nil ? "DS:¥\(self.deepSeekBalance!.totalBalance)" : "DS:nil"
-        let tvStatus = self.tavilyUsage != nil ? "TV:\(self.tavilyUsage!.creditsUsed)" : "TV:nil"
-        print("DEBUG \(dsStatus) \(tvStatus)")
-        if self.menuBarTitle.isEmpty || !self.menuBarTitle.contains("¥") {
-            self.menuBarTitle = "\(dsStatus) \(tvStatus) \(self.menuBarTitle)"
-        }
     }
     
 

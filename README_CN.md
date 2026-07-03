@@ -13,7 +13,7 @@
   <img alt="License" src="https://img.shields.io/github/license/zdx52/AIUsageMonitor">
   <img alt="Swift" src="https://img.shields.io/badge/swift-5.0-orange">
   <img alt="macOS" src="https://img.shields.io/badge/platform-macOS-lightgray">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.4.9-blue">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.4.10-blue">
 </p>
 
 AIUsageMonitor 是一个 macOS 菜单栏轻量级系统监控工具，实时显示笔记本温度、CPU 使用率、AI 用量（DeepSeek / Tavily / OpenCode GO）和 Hindsight 记忆状态。支持自动刷新和手动刷新。
@@ -90,10 +90,8 @@ cp -r .build/release/AIUsageMonitor AIUsageMonitor.app/Contents/MacOS/
 
 ## 更新内容
 
-### v1.4.9
+### v1.4.10
 
-- 🔑 **修复 Keychain 访问限制** — 移除 `SecAccess` 路径锁定，API Key 在不同构建版本间都可正常读取
-- 🌡️ **CPU & GPU 温度** — 新增基于 `smctemp` 的 CPU/GPU 温度读取，菜单栏显示 CPU 温度（替代电池温度）和 GPU 温度
-- 📝 **更好的错误处理** — DeepSeek `fetchBalance()` 在 API 返回非 200 时输出状态码和响应 body，便于排查问题
-- 🗑️ **设置精简** — 移除温度显示开关（温度始终显示）
-- 🔧 **代码清理** — 移除未使用的 `showTemperature` 状态，简化 KeychainHelper 保存流程
+- 🐛 **修复状态栏内容被污染** — 移除 refreshAll() 中残留调试代码，该代码每次刷新时把 DeepSeek 余额拼接到菜单栏标题上
+- 🌡️ **修复自启后 GPU 温度消失** — 使用绝对路径调用 smctemp 而非依赖 PATH 环境变量，修复 Finder/Dock 自启时 GPU 温度不显示的问题
+- 🔧 **代码精简** — 将 `getCPUTemperature()` / `getGPUTemperature()` 合并为共用 `runSmctemp(arg:)` 方法

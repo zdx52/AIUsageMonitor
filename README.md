@@ -17,7 +17,7 @@
   <img alt="License" src="https://img.shields.io/github/license/zdx52/AIUsageMonitor">
   <img alt="Swift" src="https://img.shields.io/badge/swift-5.0-orange">
   <img alt="macOS" src="https://img.shields.io/badge/platform-macOS-lightgray">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.4.9-blue">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.4.10-blue">
 </p>
 
 AIUsageMonitor is a lightweight macOS menu bar system monitor that displays real-time laptop temperature, CPU usage, AI service usage (DeepSeek / Tavily / OpenCode GO), and Hindsight memory stats. Supports auto-refresh and manual refresh.
@@ -94,10 +94,8 @@ cp -r .build/release/AIUsageMonitor AIUsageMonitor.app/Contents/MacOS/
 
 ## Changelog
 
-### v1.4.9
+### v1.4.10
 
-- 🔑 **Fix Keychain access** — Remove `SecAccess` restriction that locked API keys to specific app path. Keys now readable across builds (debug/release) and re-signing
-- 🌡️ **CPU & GPU temperature** — New `smctemp`-based CPU/GPU temperature readings. Menu bar now shows CPU temp (replaces battery temp) plus GPU temp
-- 📝 **Better error handling** — DeepSeek `fetchBalance()` now logs HTTP status code and response body on non-200 responses, making API failures debuggable
-- 🗑️ **Cleaner Settings** — Remove temperature visibility toggle (temperature always shown)
-- 🔧 **Code cleanup** — Remove unused `showTemperature` state, simplify KeychainHelper save flow
+- 🐛 **Fix status bar contamination** — Remove leftover debug code that periodically appended DeepSeek balance to the menu bar title
+- 🌡️ **Fix GPU temperature on app autolaunch** — Use absolute path for `smctemp` instead of relying on PATH, fixing GPU temp display when launched via Finder/dock (vs terminal)
+- 🔧 **Code cleanup** — Consolidate `getCPUTemperature()` / `getGPUTemperature()` into shared `runSmctemp(arg:)`
