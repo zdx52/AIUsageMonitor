@@ -17,6 +17,8 @@ class DashboardWindowController: NSWindowController, NSWindowDelegate, WKNavigat
     private var isUpgrading = false  // 防重复点击
     private var upgradePipeBuffer = ""  // 升级输出行缓存
     private var currentVer: String = "?.?.?"
+    private var currentTab: Int = 0  // 0=看板, 1=心智模型
+    private var mentalModelHosting: NSHostingView<AnyView>?
     
     func show() {
         if let window = window, window.isVisible {
@@ -298,80 +300,154 @@ class DashboardWindowController: NSWindowController, NSWindowDelegate, WKNavigat
             print("⚠️ 无法清理端口 8080: \(error.localizedDescription)")
         }
     }
-    
+
     private func stopProxy() {
         proxyProcess?.terminate()
         proxyProcess = nil
         proxyPipe = nil
     }
-    
-    private func waitForProxy(completion: @escaping () -> Void) {
-        var attempts = 0
-        func check() {
-            attempts += 1
-            if attempts > 10 { completion(); return }
-            let task = Process()
-            task.executableURL = URL(fileURLWithPath: "/usr/sbin/lsof")
-            task.arguments = ["-ti", "tcp:8080"]
-            task.standardOutput = FileHandle.nullDevice
-            task.standardError = FileHandle.nullDevice
-            do {
-                try task.run()
-                task.waitUntilExit()
-                if task.terminationStatus == 0 { completion(); return }
-            } catch {}
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { check() }
+
+    private func loadDashboard() {
+        guard let webView = self.webView else { return }
+        retryCount = 0
+        let t = Int(Date().timeIntervalSince1970 * 1000)
+        if let url = URL(string: "http://localhost:8080/hindsight-dashboard.html?_t=\(t)") {
+            webView.load(URLRequest(url: url))
         }
-        check()
     }
-    
+
+    private func waitForProxy() {
+        let deadline = Date().addingTimeInterval(10)
+        while Date() < deadline {
+            let semaphore = DispatchSemaphore(value: 0)
+            var ready = false
+            let url = URL(string: "http://localhost:8080/hindsight-dashboard.html")!
+            let task = URLSession.shared.dataTask(with: url) { data, resp, error in
+                if let httpResp = resp as? HTTPURLResponse, httpResp.statusCode == 200 {
+                    ready = true
+                }
+                semaphore.signal()
+            }
+            task.resume()
+            _ = semaphore.wait(timeout: .now() + 5)
+            if ready {
+                print("✅ 代理就绪")
+                return
+            }
+            print("⏳ 代理未就绪，重试...")
+            Thread.sleep(forTimeInterval: 0.5)
+        }
+        print("⚠️ 代理未在 10 秒内就绪")
+    }
+
     // MARK: - 窗口
-    
+
     private func createWindow() {
         let config = WKWebViewConfiguration()
-        // 注册 JS 消息处理
         config.userContentController.add(self, name: "hsAction")
-        
+
         let webView = WKWebView(frame: .zero, configuration: config)
         webView.navigationDelegate = self
         webView.setValue(false, forKey: "drawsBackground")
         self.webView = webView
-        
+
+        // 创建心智模型视图
+        let mmView = MentalModelListView()
+        let hosting = NSHostingView(rootView: AnyView(mmView))
+        hosting.isHidden = true
+        hosting.layer?.backgroundColor = NSColor(red: 0.06, green: 0.07, blue: 0.09, alpha: 1).cgColor
+        self.mentalModelHosting = hosting
+
+        // 容器
+        let container = NSView()
+        container.wantsLayer = true
+        container.layer?.backgroundColor = NSColor(red: 0.06, green: 0.07, blue: 0.09, alpha: 1).cgColor
+
+        // 分页栏
+        let segment = NSSegmentedControl(labels: ["📊 看板", "🧩 心智模型"], trackingMode: .selectOne, target: self, action: #selector(tabChanged(_:)))
+        segment.selectedSegment = 0
+        segment.translatesAutoresizingMaskIntoConstraints = false
+        segment.appearance = NSAppearance(named: .darkAqua)
+        container.addSubview(segment)
+
+        // 内容区域
+        let contentBox = NSView()
+        contentBox.wantsLayer = true
+        contentBox.layer?.backgroundColor = NSColor(red: 0.06, green: 0.07, blue: 0.09, alpha: 1).cgColor
+        contentBox.translatesAutoresizingMaskIntoConstraints = false
+        webView.translatesAutoresizingMaskIntoConstraints = false
+        hosting.translatesAutoresizingMaskIntoConstraints = false
+        contentBox.addSubview(webView)
+        contentBox.addSubview(hosting)
+        container.addSubview(contentBox)
+
+        NSLayoutConstraint.activate([
+            segment.topAnchor.constraint(equalTo: container.topAnchor, constant: 4),
+            segment.centerXAnchor.constraint(equalTo: container.centerXAnchor),
+            segment.heightAnchor.constraint(equalToConstant: 24),
+
+            contentBox.topAnchor.constraint(equalTo: segment.bottomAnchor, constant: 4),
+            contentBox.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            contentBox.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            contentBox.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+
+            webView.topAnchor.constraint(equalTo: contentBox.topAnchor),
+            webView.leadingAnchor.constraint(equalTo: contentBox.leadingAnchor),
+            webView.trailingAnchor.constraint(equalTo: contentBox.trailingAnchor),
+            webView.bottomAnchor.constraint(equalTo: contentBox.bottomAnchor),
+
+            hosting.topAnchor.constraint(equalTo: contentBox.topAnchor),
+            hosting.leadingAnchor.constraint(equalTo: contentBox.leadingAnchor),
+            hosting.trailingAnchor.constraint(equalTo: contentBox.trailingAnchor),
+            hosting.bottomAnchor.constraint(equalTo: contentBox.bottomAnchor),
+        ])
+
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 800, height: 480),
+            contentRect: NSRect(x: 0, y: 0, width: 1000, height: 620),
             styleMask: [.titled, .closable, .resizable, .miniaturizable],
             backing: .buffered,
             defer: false
         )
         window.title = "Hindsight 看板"
-        window.contentView = webView
+        window.appearance = NSAppearance(named: .darkAqua)
+        window.backgroundColor = NSColor(red: 0.06, green: 0.07, blue: 0.09, alpha: 1)
+        window.contentView = container
         window.center()
         window.delegate = self
         window.isReleasedWhenClosed = false
         self.window = window
-        
+
         NSApp.activate(ignoringOtherApps: true)
         window.makeKeyAndOrderFront(nil)
-        
-        waitForProxy { [weak self] in
-            guard let self = self, let webView = self.webView else { return }
-            // 加时间戳绕过 WKWebView 缓存
-            let t = Int(Date().timeIntervalSince1970 * 1000)
-            if let url = URL(string: "http://localhost:8080/hindsight-dashboard.html?_t=\(t)") {
-                webView.load(URLRequest(url: url))
-            }
+
+        // 立即加载看板（失败自动重试）
+        loadDashboard()
+
+        // 后台等待代理就绪（仅日志）
+        DispatchQueue.global().async { [weak self] in
+            self?.waitForProxy()
         }
+    }
+    
+    @objc private func tabChanged(_ sender: NSSegmentedControl) {
+        currentTab = sender.selectedSegment
+        webView?.isHidden = currentTab != 0
+        mentalModelHosting?.isHidden = currentTab != 1
+        window?.title = currentTab == 0 ? "Hindsight 看板" : "🧩 心智模型"
     }
     
     // MARK: - WKNavigationDelegate
     
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         print("✅ 看板加载完成")
+        retryCount = 0
         // 延迟注入，确保 DOM 完全就绪
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
             self?.injectToolbar()
             // 注入用户设置的刷新间隔
             self?.injectRefreshInterval()
+            // 页面加载后自动刷新数据（等效于点刷新按钮）
+            self?.autoRefreshDashboard()
             // 稍后读取控制台日志确认注入状态
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 self?.webView?.evaluateJavaScript("JSON.stringify({bar:!!document.getElementById('hs-bar'),body:!!document.body,check:!!document.getElementById('hs-check-btn'),upgrade:!!document.getElementById('hs-upgrade-btn')})") { r, _ in
@@ -380,13 +456,39 @@ class DashboardWindowController: NSWindowController, NSWindowDelegate, WKNavigat
             }
         }
     }
+
+    private func autoRefreshDashboard() {
+        webView?.evaluateJavaScript("console.log('⏩ 自动刷新数据...'); load();") { _, error in
+            if let error = error {
+                print("⚠️ 自动刷新失败: \(error.localizedDescription)")
+            } else {
+                print("✅ 自动刷新数据已触发")
+            }
+        }
+    }
     
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
         print("❌ 看板加载失败: \(error.localizedDescription)")
+        retryLoad()
     }
     
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
         print("❌ 看板加载失败(预加载): \(error.localizedDescription)")
+        retryLoad()
+    }
+    
+    private var retryCount = 0
+    private func retryLoad() {
+        let delay = min(1.0 * pow(1.5, Double(retryCount)), 10.0)  // 1s, 1.5s, 2.25s, ... 最多 10s
+        retryCount += 1
+        print("🔄 \(Int(delay))s 后重试加载 (第\(retryCount)次)...")
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+            guard let self = self, let webView = self.webView else { return }
+            let t = Int(Date().timeIntervalSince1970 * 1000)
+            if let url = URL(string: "http://localhost:8080/hindsight-dashboard.html?_t=\(t)") {
+                webView.load(URLRequest(url: url))
+            }
+        }
     }
     
     private func injectToolbar() {
@@ -400,33 +502,33 @@ class DashboardWindowController: NSWindowController, NSWindowDelegate, WKNavigat
                 
                 var bar = document.createElement('div');
                 bar.id = 'hs-bar';
-                bar.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 18px;background:rgba(26,29,39,0.92);border-bottom:1px solid #2a2d3a;font-size:13px;flex-shrink:0;position:relative;z-index:99999;pointer-events:auto;';
+                bar.style.cssText = 'display:flex;align-items:center;gap:12px;padding:8px 16px;background:#1a1d27;border-bottom:1px solid #2a2d3a;font-size:13px;flex-shrink:0;position:relative;z-index:99999;pointer-events:auto;';
                 
                 var v = document.createElement('span');
                 v.id = 'hs-ver';
-                v.style.cssText = 'color:#8b8fa3;font-weight:600;';
+                v.style.cssText = 'color:#8b8fa3;font-size:13px;font-weight:600;letter-spacing:-0.3px;';
                 v.textContent = 'Hindsight ...';
                 bar.appendChild(v);
                 
                 var s = document.createElement('span');
                 s.id = 'hs-status';
-                s.style.cssText = 'color:#8b8fa3;font-size:12px;margin-left:4px;';
-                s.textContent = '';
+                s.style.cssText = 'color:#5a5d6a;font-size:11px;margin-left:2px;';
+                s.textContent = 'connected';
                 bar.appendChild(s);
                 
                 var cb = document.createElement('button');
                 cb.id = 'hs-check-btn';
                 cb.textContent = '检查更新';
-                cb.style.cssText = 'margin-left:auto;padding:4px 14px;border-radius:8px;border:1px solid #2a2d3a;background:#0f1117;color:#e1e4eb;font-size:12px;cursor:pointer;pointer-events:auto;';
+                cb.style.cssText = 'margin-left:auto;padding:3px 12px;border-radius:6px;border:1px solid #2a2d3a;background:#0f1117;color:#8b8fa3;font-size:11px;cursor:pointer;pointer-events:auto;transition:.15s;';
                 cb.onclick = function(e) { console.log('hs: check clicked'); try { window.webkit.messageHandlers.hsAction.postMessage('check'); } catch(err) { console.error('hs: msg err', err); } };
-                cb.onmouseover = function() { this.style.borderColor = '#6c8cff'; };
-                cb.onmouseout = function() { this.style.borderColor = '#2a2d3a'; };
+                cb.onmouseover = function() { this.style.borderColor = '#6c8cff'; this.style.color = '#e1e4eb'; };
+                cb.onmouseout = function() { this.style.borderColor = '#2a2d3a'; this.style.color = '#8b8fa3'; };
                 bar.appendChild(cb);
                 
                 var ub = document.createElement('button');
                 ub.id = 'hs-upgrade-btn';
                 ub.textContent = '一键升级';
-                ub.style.cssText = 'padding:4px 14px;border-radius:8px;border:none;background:#6c8cff;color:#fff;font-size:12px;cursor:pointer;pointer-events:auto;';
+                ub.style.cssText = 'padding:3px 12px;border-radius:6px;border:none;background:#6c8cff;color:#fff;font-size:11px;font-weight:500;cursor:pointer;pointer-events:auto;transition:.15s;';
                 ub.onclick = function(e) { console.log('hs: upgrade clicked'); try { window.webkit.messageHandlers.hsAction.postMessage('upgrade'); } catch(err) { console.error('hs: msg err', err); } };
                 ub.onmouseover = function() { this.style.opacity = '0.85'; };
                 ub.onmouseout = function() { this.style.opacity = '1'; };
