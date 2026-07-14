@@ -17,7 +17,7 @@
   <img alt="License" src="https://img.shields.io/github/license/zdx52/AIUsageMonitor">
   <img alt="Swift" src="https://img.shields.io/badge/swift-5.0-orange">
   <img alt="macOS" src="https://img.shields.io/badge/platform-macOS-lightgray">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.5.0-blue">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.5.1-blue">
 </p>
 
 AIUsageMonitor is a lightweight macOS menu bar system monitor that displays real-time laptop temperature, CPU usage, AI service usage (DeepSeek / Tavily / OpenCode GO), and Hindsight memory stats. Supports auto-refresh and manual refresh.
@@ -94,14 +94,7 @@ cp -r .build/release/AIUsageMonitor AIUsageMonitor.app/Contents/MacOS/
 
 ## Changelog
 
-### v1.5.0
+### v1.5.1
 
-- 🆕 **Mental Model tab** — New tab in the Hindsight dashboard for browsing and viewing mental model details
-- 🔍 **Semantic search** — Search now uses backend `/recall` endpoint for semantic retrieval instead of client-side keyword filtering
-- 🎨 **Dashboard UI redesign** — Top bar injected natively by Swift, unified dark background, detail page with proper styling, auto-retry on load failure, and smoother refresh
-
-### v1.4.10
-
-- 🐛 **Fix status bar contamination** — Remove leftover debug code that periodically appended DeepSeek balance to the menu bar title
-- 🌡️ **Fix GPU temperature on app autolaunch** — Use absolute path for `smctemp` instead of relying on PATH, fixing GPU temp display when launched via Finder/dock (vs terminal)
-- 🔧 **Code cleanup** — Consolidate `getCPUTemperature()` / `getGPUTemperature()` into shared `runSmctemp(arg:)`
+- 🧹 **Simplify mental model tab** — Removed category filters, only show "全部" (All) view
+- 🐛 **Minor fixes** — Streamlined mental model list UI

@@ -13,7 +13,7 @@
   <img alt="License" src="https://img.shields.io/github/license/zdx52/AIUsageMonitor">
   <img alt="Swift" src="https://img.shields.io/badge/swift-5.0-orange">
   <img alt="macOS" src="https://img.shields.io/badge/platform-macOS-lightgray">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.5.0-blue">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.5.1-blue">
 </p>
 
 AIUsageMonitor 是一个 macOS 菜单栏轻量级系统监控工具，实时显示笔记本温度、CPU 使用率、AI 用量（DeepSeek / Tavily / OpenCode GO）和 Hindsight 记忆状态。支持自动刷新和手动刷新。
@@ -90,14 +90,7 @@ cp -r .build/release/AIUsageMonitor AIUsageMonitor.app/Contents/MacOS/
 
 ## 更新内容
 
-### v1.5.0
+### v1.5.1
 
-- 🆕 **心智模型标签页** — 看板新增心智模型分页，支持浏览心智模型列表和查看详情
-- 🔍 **语义搜索** — 搜索改为后端 `/recall` 语义检索，取代之前的客户端关键词过滤
-- 🎨 **看板 UI 重构** — 顶栏由 Swift 原生注入，统一暗色背景，详情页样式优化，加载失败自动重试，刷新更流畅
-
-### v1.4.10
-
-- 🐛 **修复状态栏内容被污染** — 移除 refreshAll() 中残留调试代码，该代码每次刷新时把 DeepSeek 余额拼接到菜单栏标题上
-- 🌡️ **修复自启后 GPU 温度消失** — 使用绝对路径调用 smctemp 而非依赖 PATH 环境变量，修复 Finder/Dock 自启时 GPU 温度不显示的问题
-- 🔧 **代码精简** — 将 `getCPUTemperature()` / `getGPUTemperature()` 合并为共用 `runSmctemp(arg:)` 方法
+- 🧹 **简化心智模型页面** — 移除分类筛选标签，只保留「全部」视图
+- 🐛 **小修复** — 精简心智模型列表 UI

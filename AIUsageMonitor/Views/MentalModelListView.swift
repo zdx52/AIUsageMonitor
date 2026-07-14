@@ -34,47 +34,7 @@ struct MentalModel: Codable, Identifiable {
 struct MentalModelListView: View {
     @State private var mentalModels: [MentalModel] = []
     @State private var isLoading = true
-    @State private var selectedCategory: String = ""
-    @State private var selectedSubCategory: String? = nil
     @State private var errorMessage: String? = nil
-    
-    var categories: [String] {
-        let cats = Set(mentalModels.flatMap { mm in
-            (mm.tags ?? []).filter { $0.hasPrefix("category:") }
-                .map { String($0.dropFirst(9)) }
-        })
-        return cats.sorted()
-    }
-    
-    /// 默认选第一个分类（最左侧）
-    private func defaultCategory() -> String {
-        categories.first ?? "全部"
-    }
-    
-    /// 给定主分类下，非 category: 的标签作为子分类
-    func subCategories(for cat: String) -> [String] {
-        guard cat != "全部" else { return [] }
-        let items = mentalModels.filter { mm in
-            (mm.tags ?? []).contains("category:\(cat)")
-        }
-        let subs = Set(items.flatMap { mm in
-            (mm.tags ?? []).filter { !$0.hasPrefix("category:") }
-        })
-        return subs.sorted()
-    }
-    
-    func modelsForCategory(_ cat: String, sub: String? = nil) -> [MentalModel] {
-        if cat == "全部" { return mentalModels }
-        var result = mentalModels.filter { mm in
-            (mm.tags ?? []).contains("category:\(cat)")
-        }
-        if let sub = sub {
-            result = result.filter { mm in
-                (mm.tags ?? []).contains(sub)
-            }
-        }
-        return result
-    }
     
     var body: some View {
         VStack(spacing: 0) {
@@ -112,115 +72,34 @@ struct MentalModelListView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(Color.mmBackground)
             } else {
-                // 分类标签栏
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 6) {
-                        // 主分类按钮
-                        ForEach(categories, id: \.self) { cat in
-                            Button(action: {
-                                selectedCategory = cat
-                                selectedSubCategory = nil
-                            }) {
-                                let count = modelsForCategory(cat).count
-                                Text("\(cat) (\(count))")
-                                    .font(.subheadline)
-                                    .fontWeight(.medium)
-                                    .padding(.horizontal, 14)
-                                    .padding(.vertical, 6)
-                                    .background(selectedCategory == cat ? Color.mmAccent : Color.mmSurface)
-                                    .foregroundStyle(selectedCategory == cat ? .white : Color.mmSecondary)
-                                    .cornerRadius(7)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 7)
-                                            .stroke(selectedCategory == cat ? Color.mmAccent : Color.mmBorder, lineWidth: 0.5)
-                                    )
-                            }
-                            .buttonStyle(.plain)
-                        }
-                        
-                        Spacer(minLength: 12)
-                        
-                        // 「全部」固定在右侧
-                        Button(action: {
-                            selectedCategory = "全部"
-                            selectedSubCategory = nil
-                        }) {
-                            Text("全部 (\(mentalModels.count))")
-                                .font(.subheadline)
-                                .fontWeight(.medium)
-                                .padding(.horizontal, 14)
-                                .padding(.vertical, 6)
-                                .background(selectedCategory == "全部" ? Color.mmAccent : Color.mmSurface)
-                                .foregroundStyle(selectedCategory == "全部" ? .white : Color.mmSecondary)
-                                .cornerRadius(7)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 7)
-                                        .stroke(selectedCategory == "全部" ? Color.mmAccent : Color.mmBorder, lineWidth: 0.5)
-                                )
-                        }
-                        .buttonStyle(.plain)
-                    }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
+                // 全部标签栏（仅显示总数）
+                HStack {
+                    Text("全部 (\(mentalModels.count))")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 6)
+                        .background(Color.mmAccent)
+                        .foregroundStyle(.white)
+                        .cornerRadius(7)
+                    Spacer()
                 }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
                 .background(Color.mmSurface.opacity(0.6))
-                
-                // 子分类标签栏（如按小说名称拆分）
-                if selectedCategory != "全部" {
-                    let subs = subCategories(for: selectedCategory)
-                    if subs.count >= 2 {
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 6) {
-                                // "全部"子分类
-                                Button(action: { selectedSubCategory = nil }) {
-                                    Text("全部 (\(modelsForCategory(selectedCategory).count))")
-                                        .font(.caption)
-                                        .padding(.horizontal, 10)
-                                        .padding(.vertical, 4)
-                                        .background(selectedSubCategory == nil ? Color.mmAccent.opacity(0.2) : Color.mmSurface)
-                                        .foregroundStyle(selectedSubCategory == nil ? Color.mmAccent : Color.mmSecondary)
-                                        .cornerRadius(5)
-                                }
-                                .buttonStyle(.plain)
-                                
-                                ForEach(subs, id: \.self) { sub in
-                                    Button(action: { selectedSubCategory = sub }) {
-                                        let count = modelsForCategory(selectedCategory, sub: sub).count
-                                        Text("\(sub) (\(count))")
-                                            .font(.caption)
-                                            .padding(.horizontal, 10)
-                                            .padding(.vertical, 4)
-                                            .background(selectedSubCategory == sub ? Color.mmAccent : Color.mmSurface)
-                                            .foregroundStyle(selectedSubCategory == sub ? .white : Color.mmSecondary)
-                                            .cornerRadius(5)
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 5)
-                                                    .stroke(selectedSubCategory == sub ? Color.mmAccent : Color.mmBorder, lineWidth: 0.5)
-                                            )
-                                    }
-                                    .buttonStyle(.plain)
-                                }
-                            }
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                        }
-                        .background(Color.mmBackground)
-                    }
-                }
                 
                 Divider().overlay(Color.mmBorder)
                 
                 // 列表
                 ScrollView {
                     LazyVStack(spacing: 4) {
-                        let items = modelsForCategory(selectedCategory, sub: selectedSubCategory)
-                        if items.isEmpty {
+                        if mentalModels.isEmpty {
                             Text("暂无")
                                 .font(.caption)
                                 .foregroundStyle(Color.mmDim)
                                 .padding(40)
                         }
-                        ForEach(items) { mm in
+                        ForEach(mentalModels) { mm in
                             MentalModelRow(mm: mm)
                                 .contentShape(Rectangle())
                                 .onTapGesture {
@@ -236,9 +115,6 @@ struct MentalModelListView: View {
         .background(Color.mmBackground)
         .task {
             await loadMentalModels()
-            if selectedCategory.isEmpty, let first = categories.first {
-                selectedCategory = first
-            }
         }
     }
     
