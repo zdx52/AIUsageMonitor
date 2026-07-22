@@ -19,10 +19,6 @@ cp "$BUILD_BIN" "$APP_BUNDLE/Contents/MacOS/AIUsageMonitor"
 echo "📄 复制 Info.plist..."
 cp AIUsageMonitor/Info.plist "$APP_BUNDLE/Contents/Info.plist"
 
-echo "🎨 复制资源文件..."
-cp AIUsageMonitor/Resources/hindsight-dashboard.html "$APP_BUNDLE/Contents/Resources/hindsight-dashboard.html"
-cp AIUsageMonitor/Resources/hindsight-server.py "$APP_BUNDLE/Contents/Resources/hindsight-server.py"
-
 echo "✍️ 签名..."
 codesign --force --sign - "$APP_BUNDLE"
 
