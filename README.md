@@ -94,7 +94,12 @@ cp -r .build/release/AIUsageMonitor AIUsageMonitor.app/Contents/MacOS/
 
 ## Changelog
 
+### v1.5.2
+
+- 🧠 **Hindsight native dashboard** — Replaced embedded web proxy with native Hindsight Control Plane (port 9999)
+- 🗑️ **Cleanup** — Removed old hindsight-server.py and hindsight-dashboard.html resources
+
 ### v1.5.1
 
-- 🧹 **Simplify mental model tab** — Removed category filters, only show "全部" (All) view
+- 🧹 **Simplify mental model page** — Removed category filters, only show "全部" (All) view
 - 🐛 **Minor fixes** — Streamlined mental model list UI
