@@ -43,6 +43,7 @@ test_output.log
 
 # Build artifacts
 AIUsageMonitor.app/
+AIUsageMonitor/AIUsageMonitor
 *.dmg
 
 # Hermes agent
