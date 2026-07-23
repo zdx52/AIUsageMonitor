@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.user.hindsight-control-plane</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/Users/zdx52/.local/bin/hindsight-control-plane</string>
+		<string>--api-url</string>
+		<string>http://localhost:9077</string>
+	</array>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>KeepAlive</key>
+	<true/>
+	<key>StandardOutPath</key>
+	<string>/tmp/hindsight-control-plane.log</string>
+	<key>StandardErrorPath</key>
+	<string>/tmp/hindsight-control-plane.log</string>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>PATH</key>
+		<string>/Users/zdx52/.local/bin:/usr/local/bin:/usr/bin:/bin</string>
+		<key>HOME</key>
+		<string>/Users/zdx52</string>
+	</dict>
+</dict>
+</plist>
