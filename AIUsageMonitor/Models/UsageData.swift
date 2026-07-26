@@ -235,9 +235,7 @@ class DataStore: ObservableObject {
             if let temp = td.cpuTemperature ?? td.batteryTemperature {
                 parts.append("\(String(format: "%.1f", temp))°C")
             }
-            if let cpu = td.cpuUsage {
-                parts.append("\(String(format: "%.0f", cpu))%")
-            }
+
         }
         if let s = speed {
             parts.append("↓\(shorten(s.download)) ↑\(shorten(s.upload))")

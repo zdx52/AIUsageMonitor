@@ -17,7 +17,7 @@
   <img alt="License" src="https://img.shields.io/github/license/zdx52/AIUsageMonitor">
   <img alt="Swift" src="https://img.shields.io/badge/swift-5.0-orange">
   <img alt="macOS" src="https://img.shields.io/badge/platform-macOS-lightgray">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.5.2-blue">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.5.3-blue">
 </p>
 
 AIUsageMonitor is a lightweight macOS menu bar system monitor that displays real-time laptop temperature, CPU usage, AI service usage (DeepSeek / Tavily / OpenCode GO), and Hindsight memory stats. Supports auto-refresh and manual refresh.
@@ -125,8 +125,9 @@ cp -r .build/release/AIUsageMonitor AIUsageMonitor.app/Contents/MacOS/
 
 ## Changelog
 
-### v1.5.2
+### v1.5.3
 
+- 🧹 **Cleaner status bar** — Removed CPU usage percentage from menu bar title, keeping temperature + network speed only
 - 🧠 **Hindsight native dashboard** — Replaced embedded web proxy with native Hindsight Control Plane (port 9999)
 - 🗑️ **Cleanup** — Removed old hindsight-server.py and hindsight-dashboard.html resources
 - 📋 **Prerequisites documented** — Added setup guide for Hindsight API + Control Plane services

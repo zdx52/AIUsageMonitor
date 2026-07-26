@@ -13,7 +13,7 @@
   <img alt="License" src="https://img.shields.io/github/license/zdx52/AIUsageMonitor">
   <img alt="Swift" src="https://img.shields.io/badge/swift-5.0-orange">
   <img alt="macOS" src="https://img.shields.io/badge/platform-macOS-lightgray">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.5.2-blue">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.5.3-blue">
 </p>
 
 AIUsageMonitor 是一个 macOS 菜单栏轻量级系统监控工具，实时显示笔记本温度、CPU 使用率、AI 用量（DeepSeek / Tavily / OpenCode GO）和 Hindsight 记忆状态。支持自动刷新和手动刷新。
@@ -121,8 +121,9 @@ cp -r .build/release/AIUsageMonitor AIUsageMonitor.app/Contents/MacOS/
 
 ## 更新内容
 
-### v1.5.2
+### v1.5.3
 
+- 🧹 **状态栏精简** — 去掉菜单栏标题中的 CPU 使用率百分数，仅保留温度 + 网速
 - 🧠 **Hindsight 原生看板** — 替换内嵌网页代理为 Hindsight 官方 Control Plane 看板（端口 9999）
 - 🗑️ **清理** — 移除旧的 hindsight-server.py 和 hindsight-dashboard.html 资源文件
 - 📋 **前置依赖说明** — 新增 Hindsight API + Control Plane 服务的安装与配置指南
