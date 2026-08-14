@@ -127,9 +127,9 @@ cp -r .build/release/AIUsageMonitor AIUsageMonitor.app/Contents/MacOS/
 
 ### v1.6.0
 
-- 📖 **小说创作 Web 集成** — 新增「小说」按钮（看板旁），一键启动内置 Flask Web UI（端口 8080）并在原生窗口打开；web/ 目录随本项目维护
-- 🚀 **自动拉起服务** — 点击按钮自动检测并启动小说 Web 服务（web/.venv），退出应用时自动清理
-- 🎨 **Web UI 精美升级** — 小说列表渐变封面卡片、总览页 hero + 统计卡 + SVG 字数面积图（悬停详情）+ 质量总览、章节页 pill 徽章表格、人物页渐变头像卡片、世界观章节卡片、故事架构卷时间线、连载追踪状态徽章、药丸按钮与毛玻璃质感统一
+- 📖 **Novel Writing Web UI integrated** — New "小说" (Novel) button next to the dashboard launches the built-in Flask web UI (port 8080) in a native window; the web/ app is now maintained in this repo
+- 🚀 **Auto service startup** — Clicking the button detects and starts the novel web service (web/.venv) automatically; cleaned up on app exit
+- 🎨 **UI polish** — Gradient book covers (real cover images from 封面/ take priority), overview hero with SVG word-count chart (hover details) + quality summary, character avatar cards, world/outline/tracking card layouts, pill badges, macOS glassmorphism, evenly spaced menu bar buttons
 
 ### v1.5.3
 
