@@ -1,0 +1,314 @@
+{% extends "base.html" %}
+{% block title %}{{ config.get('title') or slug }}{% endblock %}
+{% block content %}
+
+{% set tgt = config.get('target_chapters', 200) %}
+{% set tgt_words = config.get('target_words_per_chapter', 2800) %}
+{% set title = config.get('title') or slug %}
+
+<!-- Hero 区 -->
+<div style="margin-bottom:20px">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <h1 class="page-title" style="margin-bottom:0">{{ title }}</h1>
+        {% if config.status %}
+            {% if config.status == '连载中' or config.status == '起草中' %}
+            <span class="pill pill-orange">✍️ {{ config.status }}</span>
+            {% elif config.status == '已完结' %}
+            <span class="pill pill-green">✅ {{ config.status }}</span>
+            {% elif config.status == '修订中' %}
+            <span class="pill pill-purple">🔧 {{ config.status }}</span>
+            {% else %}
+            <span class="pill pill-accent">📌 {{ config.status }}</span>
+            {% endif %}
+        {% endif %}
+    </div>
+    {% if config.get('one_liner') %}
+    <blockquote style="margin-top:10px">{{ config.one_liner }}</blockquote>
+    {% endif %}
+</div>
+
+<!-- 总进度 -->
+<div class="card" style="margin-bottom:16px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="font-size:14px;font-weight:600">📊 总进度</div>
+        <div style="font-size:12px;color:var(--text-2)">
+            {{ total_chapters }}/{{ tgt }} 章 · {{ "{:,}".format(total_chars) }}/{{ "{:,}".format(tgt * tgt_words) }} 字
+            {% if total_chapters > 0 %}· 完成 {{ progress_pct }}%{% endif %}
+        </div>
+    </div>
+    <div class="progress {% if progress_pct >= 100 %}progress-green{% elif progress_pct >= 50 %}progress-blue{% else %}progress-orange{% endif %}">
+        <div style="width:{{ progress_pct }}%"></div>
+    </div>
+    {% if latest_chapter %}
+    <div style="margin-top:10px;font-size:12px;color:var(--text-2);border-top:1px solid var(--border);padding-top:10px">
+        📌 最新章节：<strong style="color:var(--text)">{{ latest_chapter }}</strong>
+    </div>
+    {% endif %}
+</div>
+
+<!-- 统计行 -->
+<div class="stat-row">
+    <div class="stat-box">
+        <span class="stat-icon">📖</span>
+        <div class="num">{{ total_chapters }}</div>
+        <div class="label">章 节</div>
+    </div>
+    <div class="stat-box">
+        <span class="stat-icon">✍️</span>
+        <div class="num">{{ "{:,}".format(total_chars) }}</div>
+        <div class="label">总 字 数</div>
+    </div>
+    {% if total_chapters > 0 %}
+    <div class="stat-box">
+        <span class="stat-icon">📝</span>
+        <div class="num">{{ "{:,}".format(total_chars // total_chapters) }}</div>
+        <div class="label">均 章 字 数</div>
+    </div>
+    {% endif %}
+    <div class="stat-box">
+        <span class="stat-icon">🎯</span>
+        <div class="num" style="color:var(--accent)">{{ progress_pct }}%</div>
+        <div class="label">完 成 度</div>
+    </div>
+</div>
+
+<!-- 质量总览（来自质检工具链） -->
+{% if q_summary %}
+<div class="card" style="margin:16px 0;position:relative;overflow:hidden">
+    <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--green),var(--orange),var(--red));opacity:0.5"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div style="display:flex;align-items:center;gap:8px">
+            <div style="width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--green),var(--teal));display:flex;align-items:center;justify-content:center;font-size:15px;box-shadow:0 2px 8px var(--green-soft)">📊</div>
+            <div>
+                <div style="font-weight:600;font-size:14px">质量总览</div>
+                <div style="font-size:11px;color:var(--text-2)">番茄 6 项 · 重复检测 · 角色 · 时间线</div>
+            </div>
+        </div>
+        <a href="/novels/{{ slug }}/quality" class="btn btn-sm">查看详情 →</a>
+    </div>
+    {% set rate = (q_summary.passed / q_summary.total * 100)|round if q_summary.total else 0 %}
+    <div class="stat-row" style="margin-bottom:0">
+        <div class="stat-box">
+            <span class="stat-icon">📄</span>
+            <div class="num">{{ q_summary.total }}</div>
+            <div class="label">质 检 章 数</div>
+        </div>
+        <div class="stat-box">
+            <span class="stat-icon">✅</span>
+            <div class="num" style="color:var(--green)">{{ q_summary.passed }}</div>
+            <div class="label">达 标</div>
+        </div>
+        <div class="stat-box">
+            <span class="stat-icon">🎯</span>
+            <div class="num" style="color:{% if rate >= 100 %}var(--green){% elif rate >= 70 %}var(--orange){% else %}var(--red){% endif %}">{{ rate }}%</div>
+            <div class="label">达 标 率</div>
+        </div>
+        <div class="stat-box">
+            <span class="stat-icon">🔁</span>
+            <div class="num" style="color:{% if q_summary.duplicates %}var(--red){% else %}var(--green){% endif %}">{{ q_summary.duplicates }}</div>
+            <div class="label">重 复 章</div>
+        </div>
+        <div class="stat-box">
+            <span class="stat-icon">🎭</span>
+            <div class="num" style="color:var(--accent)">{{ q_summary.cast }}</div>
+            <div class="label">出 场 角 色</div>
+        </div>
+        <div class="stat-box">
+            <span class="stat-icon">⏱️</span>
+            <div class="num" style="color:var(--accent)">{{ q_summary.timeline }}</div>
+            <div class="label">时 间 表 述</div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- 章节字数走势（SVG 面积图） -->
+{% if chapters %}
+<h2 class="section-title">章节字数走势</h2>
+<div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="font-size:12px;color:var(--text-2)">每章汉字数 · 悬停查看详情</div>
+        <div style="font-size:11px;color:var(--text-3);font-family:var(--mono)">目标 {{ tgt_words }} 字</div>
+    </div>
+    <div id="word-chart" style="position:relative;width:100%;height:170px"></div>
+    <div class="chart-label" id="chart-labels"></div>
+    <div id="chart-tooltip" style="position:fixed;display:none;z-index:999;pointer-events:none;background:var(--surface-2);border:1px solid var(--border-2);border-radius:8px;padding:8px 12px;font-size:11px;box-shadow:var(--shadow-pop);backdrop-filter:blur(12px)"></div>
+</div>
+{% endif %}
+
+<!-- 梗概（默认折叠） -->
+{% if not config.get('one_liner') %}
+<div class="card-grid" style="grid-template-columns:1fr;margin-top:16px">
+    <div class="card">
+        <h3>📝 梗概</h3>
+        {% if seed %}
+        <details>
+            <summary style="cursor:pointer;color:var(--accent);font-size:13px;margin-top:8px">点击展开梗概（共 {{ seed|length }} 字）</summary>
+            <div style="margin-top:8px;background:var(--surface-3);padding:12px;border-radius:var(--radius);font-size:13px;line-height:1.8;color:var(--text-2)">{{ seed|replace('\n\n', '<br><br>')|replace('\n', '<br>')|safe }}</div>
+        </details>
+        {% else %}
+        <p style="color:var(--text-2);margin-top:12px">尚未设置</p>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- 各卷概览 -->
+{% if volumes %}
+<h2 class="section-title">各卷概览</h2>
+<div class="card-grid">
+    {% for v in volumes %}
+    <div class="card" style="position:relative;overflow:hidden">
+        <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,{% if v.status == '已完成' %}var(--green){% elif v.status == '起草中' %}var(--orange){% else %}var(--accent){% endif %},transparent)"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+            <h3 style="margin-bottom:0">{{ v.name }}</h3>
+            {% if v.status %}
+            <span class="pill {% if v.status == '已完成' %}pill-green{% elif v.status == '起草中' %}pill-orange{% else %}pill-accent{% endif %}" style="flex-shrink:0">{{ v.status }}</span>
+            {% endif %}
+        </div>
+        {% if v.title %}<p style="color:var(--text-2);font-size:13px;margin:6px 0 0">— {{ v.title }}</p>{% endif %}
+        <div class="meta" style="margin-top:12px;display:flex;gap:10px">
+            <span class="pill pill-default">📖 {{ v.chapters }} 章</span>
+            <span class="pill pill-default">✍️ {{ "{:,}".format(v.chars) }} 字</span>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+{% if chapters %}
+{% set tgt_words = config.get('target_words_per_chapter', 2800) %}
+<script>
+(function() {
+    const chapters = {{ chapters|tojson }};
+    const tgtWords = {{ tgt_words }};
+    const el = document.getElementById('word-chart');
+    const tip = document.getElementById('chart-tooltip');
+    if (!el || !chapters.length) return;
+
+    const W = 900, H = 170, PAD_B = 18, PAD_T = 12;
+    const maxC = Math.max(...chapters.map(c => c.chars), 1);
+    const n = chapters.length;
+    const innerH = H - PAD_B - PAD_T;
+
+    function x(i) { return n === 1 ? W / 2 : (i / (n - 1)) * W; }
+    function y(v) { return PAD_T + innerH - (v / maxC) * innerH; }
+
+    let linePts = chapters.map((c, i) => `${x(i).toFixed(1)},${y(c.chars).toFixed(1)}`).join(' ');
+    let areaPts = `${0},${H - PAD_B} ` + linePts + ` ${W},${H - PAD_B}`;
+
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    svg.setAttribute('preserveAspectRatio', 'none');
+    svg.style.cssText = 'width:100%;height:100%;display:block;overflow:visible';
+
+    // 渐变 defs
+    const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+    const grad = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
+    grad.id = 'chartGrad';
+    grad.setAttribute('x1', '0'); grad.setAttribute('y1', '0');
+    grad.setAttribute('x2', '0'); grad.setAttribute('y2', '1');
+    const g1 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+    g1.setAttribute('offset', '0%'); g1.style.stopColor = 'var(--accent)'; g1.style.stopOpacity = '0.35';
+    const g2 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+    g2.setAttribute('offset', '100%'); g2.style.stopColor = 'var(--accent)'; g2.style.stopOpacity = '0.02';
+    grad.appendChild(g1); grad.appendChild(g2); defs.appendChild(grad);
+    svg.appendChild(defs);
+
+    // 面积
+    const area = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    area.setAttribute('d', `M${areaPts}Z`);
+    area.setAttribute('fill', 'url(#chartGrad)');
+    svg.appendChild(area);
+
+    // 折线
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+    line.setAttribute('points', linePts);
+    line.setAttribute('fill', 'none');
+    line.style.stroke = 'var(--accent)';
+    line.setAttribute('stroke-width', '2');
+    line.setAttribute('stroke-linejoin', 'round');
+    line.setAttribute('stroke-linecap', 'round');
+    svg.appendChild(line);
+
+    // 目标线
+    if (tgtWords <= maxC) {
+        const ty = y(tgtWords);
+        const tline = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        tline.setAttribute('x1', '0'); tline.setAttribute('y1', ty);
+        tline.setAttribute('x2', W); tline.setAttribute('y2', ty);
+        tline.style.stroke = 'var(--green)';
+        tline.setAttribute('stroke-width', '1.5');
+        tline.setAttribute('stroke-dasharray', '6 5');
+        tline.setAttribute('opacity', '0.7');
+        svg.appendChild(tline);
+        const tlabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        tlabel.setAttribute('x', W - 4); tlabel.setAttribute('y', ty - 5);
+        tlabel.setAttribute('text-anchor', 'end');
+        tlabel.style.fill = 'var(--green)';
+        tlabel.setAttribute('font-size', '10');
+        tlabel.setAttribute('font-family', 'var(--mono)');
+        tlabel.textContent = `目标 ${tgtWords}`;
+        svg.appendChild(tlabel);
+    }
+
+    // 点 + hover 热区
+    const dotR = n > 60 ? 0 : 2.5;
+    chapters.forEach((c, i) => {
+        if (dotR > 0) {
+            const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            dot.setAttribute('cx', x(i)); dot.setAttribute('cy', y(c.chars));
+            dot.setAttribute('r', dotR);
+            dot.style.fill = c.chars >= tgtWords ? 'var(--green)' : 'var(--orange)';
+            svg.appendChild(dot);
+        }
+        // 热区（透明竖条）
+        const w0 = W / n;
+        const hot = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        hot.setAttribute('x', x(i) - w0 / 2);
+        hot.setAttribute('y', '0');
+        hot.setAttribute('width', Math.max(w0 - 2, 2));
+        hot.setAttribute('height', H);
+        hot.setAttribute('fill', 'transparent');
+        hot.style.cursor = 'crosshair';
+        hot.addEventListener('mousemove', (e) => {
+            tip.innerHTML = `<div style="font-weight:600;margin-bottom:2px">${c.name.replace('ch_', '第')}章${c.title ? ' ' + c.title : ''}</div><div>字数：<b>${c.chars.toLocaleString()}</b> ${c.chars >= tgtWords ? '✅' : '⚠️'}${c.volume ? ' · ' + c.volume : ''}</div>`;
+            tip.style.display = 'block';
+            tip.style.left = (e.clientX + 14) + 'px';
+            tip.style.top = (e.clientY - 10) + 'px';
+        });
+        hot.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
+        svg.appendChild(hot);
+    });
+
+    el.appendChild(svg);
+
+    // 底部章节标签（章数多时稀疏显示）
+    const labelEl = document.getElementById('chart-labels');
+    if (labelEl) {
+        const step = n > 40 ? Math.ceil(n / 8) : (n > 20 ? 5 : 1);
+        const shown = new Set();
+        chapters.forEach((c, i) => {
+            const num = i + 1;
+            const isLast = i === n - 1;
+            if (num % step === 1 || isLast) {
+                const s = document.createElement('span');
+                s.textContent = c.name.replace('ch_', '');
+                s.title = `${c.name.replace('ch_', '第')}章`;
+                labelEl.appendChild(s);
+                shown.add(num);
+            } else if (!isLast) {
+                const pad = document.createElement('span');
+                pad.style.visibility = 'hidden';
+                pad.textContent = '·';
+                labelEl.appendChild(pad);
+            }
+        });
+    }
+})();
+</script>
+{% endif %}
+{% endblock %}

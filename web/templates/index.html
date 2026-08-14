@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+{% block title %}autonovel-cn{% endblock %}
+{% block content %}
+<h1 class="page-title">📖 小说列表</h1>
+<p class="page-subtitle">novels/ 目录下的所有小说项目 — 拖拽卡片可改变顺序</p>
+
+<div class="card-grid" id="novel-grid">
+    {% for novel in novels %}
+    {% set pct = novel.progress_pct %}
+    {% set tgt = novel.config.get('target_chapters', 200) %}
+    {% set title = novel.config.get('title') or novel.name %}
+    <a href="/novels/{{ novel.name }}" class="card novel-card" draggable="true" data-name="{{ novel.name }}">
+        <!-- 渐变封面 -->
+        <div class="novel-cover" data-seed="{{ title }}">
+            <span class="cover-char">{{ title[0] }}</span>
+            <span class="cover-sub">小 说</span>
+        </div>
+
+        <div class="novel-body">
+            <!-- 标题 + 状态 -->
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
+                <span class="novel-title">{{ title }}</span>
+                {% if novel.config.status %}
+                    {% if novel.config.status == '连载中' or novel.config.status == '起草中' %}
+                    <span class="pill pill-orange" style="flex-shrink:0">✍️ {{ novel.config.status }}</span>
+                    {% elif novel.config.status == '已完结' %}
+                    <span class="pill pill-green" style="flex-shrink:0">✅ {{ novel.config.status }}</span>
+                    {% elif novel.config.status == '修订中' %}
+                    <span class="pill pill-purple" style="flex-shrink:0">🔧 {{ novel.config.status }}</span>
+                    {% else %}
+                    <span class="pill pill-accent" style="flex-shrink:0">📌 {{ novel.config.status }}</span>
+                    {% endif %}
+                {% endif %}
+            </div>
+
+            <!-- 一句话梗概 -->
+            {% if novel.config.one_liner %}
+            <div class="novel-tagline">"{{ novel.config.one_liner[:80] }}{% if novel.config.one_liner|length > 80 %}…{% endif %}"</div>
+            {% endif %}
+
+            <!-- 进度 -->
+            <div style="margin:2px 0">
+                <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-2);margin-bottom:4px">
+                    <span>进度</span>
+                    <span>{{ novel.chapters }}/{{ tgt }} 章 · {{ "{:,}".format(novel.chars) }} 字</span>
+                </div>
+                <div class="progress {% if pct >= 100 %}progress-green{% elif pct >= 50 %}progress-blue{% else %}progress-orange{% endif %}">
+                    <div style="width:{{ pct }}%"></div>
+                </div>
+            </div>
+
+            <!-- 标签 -->
+            <div class="novel-meta">
+                {% if novel.config.genre %}
+                <span class="pill pill-teal">{{ novel.config.genre }}</span>
+                {% endif %}
+                {% if novel.config.tone %}
+                <span class="pill pill-purple">{{ novel.config.tone }}</span>
+                {% endif %}
+            </div>
+
+            <!-- 最新章节 -->
+            {% if novel.latest_chapter %}
+            <div class="novel-latest">📌 最新：{{ novel.latest_chapter[:50] }}{% if novel.latest_chapter|length > 50 %}…{% endif %}</div>
+            {% endif %}
+        </div>
+    </a>
+    {% endfor %}
+</div>
+
+<script>
+(function() {
+    // ── 渐变封面配色（按书名哈希稳定选取） ──
+    const COVERS = [
+        'linear-gradient(135deg, #0a84ff, #5e5ce6)',
+        'linear-gradient(135deg, #30d158, #64d2ff)',
+        'linear-gradient(135deg, #ff9f0a, #ff453a)',
+        'linear-gradient(135deg, #bf5af2, #0a84ff)',
+        'linear-gradient(135deg, #ff6482, #ff9f0a)',
+        'linear-gradient(135deg, #5e5ce6, #bf5af2)',
+        'linear-gradient(135deg, #64d2ff, #0a84ff)',
+        'linear-gradient(135deg, #ff375f, #bf5af2)',
+    ];
+    function hash(str) {
+        let h = 0;
+        for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
+        return h;
+    }
+    document.querySelectorAll('.novel-cover').forEach(el => {
+        el.style.background = COVERS[hash(el.dataset.seed || '') % COVERS.length];
+    });
+
+    // ── 拖拽排序 ──
+    const grid = document.getElementById('novel-grid');
+    let dragSrc = null;
+
+    grid.addEventListener('dragstart', function(e) {
+        const card = e.target.closest('.novel-card');
+        if (!card) return;
+        dragSrc = card;
+        card.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+    });
+
+    grid.addEventListener('dragend', function(e) {
+        const card = e.target.closest('.novel-card');
+        if (card) card.classList.remove('dragging');
+        document.querySelectorAll('.novel-card').forEach(c => c.classList.remove('drag-over'));
+    });
+
+    grid.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        const card = e.target.closest('.novel-card');
+        if (card && card !== dragSrc) {
+            document.querySelectorAll('.novel-card').forEach(c => c.classList.remove('drag-over'));
+            card.classList.add('drag-over');
+        }
+    });
+
+    grid.addEventListener('dragleave', function(e) {
+        const card = e.target.closest('.novel-card');
+        if (card) card.classList.remove('drag-over');
+    });
+
+    grid.addEventListener('drop', function(e) {
+        e.preventDefault();
+        document.querySelectorAll('.novel-card').forEach(c => c.classList.remove('drag-over'));
+        const target = e.target.closest('.novel-card');
+        if (!dragSrc || !target || dragSrc === target) return;
+
+        const items = [...grid.children];
+        const fromIdx = items.indexOf(dragSrc);
+        const toIdx = items.indexOf(target);
+        if (fromIdx < toIdx) {
+            target.after(dragSrc);
+        } else {
+            target.before(dragSrc);
+        }
+
+        const order = [...grid.children].map(c => c.dataset.name);
+        fetch('/api/novels/reorder', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({order: order})
+        }).catch(err => console.error('保存顺序失败', err));
+    });
+})();
+</script>
+{% endblock %}

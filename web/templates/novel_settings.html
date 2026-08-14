@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}小说设置 — {{ slug }}{% endblock %}
+{% block content %}
+<h1 class="page-title">⚙️ 小说设置</h1>
+<p class="page-subtitle">{{ slug }}</p>
+
+<form method="POST">
+<div class="card-grid" style="grid-template-columns:1fr 1fr">
+    <div class="card">
+        <h3>📋 基本信息</h3>
+        <div style="margin-top:12px">
+            <div class="form-group">
+                <label>书名</label>
+                <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:13px">
+                    <span>{{ detected_title or config.get('title', slug) }}</span>
+                    <span style="font-size:10px;color:var(--text2)">自动</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>作者</label>
+                <input type="text" name="author" class="form-control" value="{{ config.get('author', '') }}">
+            </div>
+            <div class="form-group">
+                <label>类型</label>
+                <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:13px">
+                    <span>{{ detected_genre or config.get('genre', '未检测到') }}</span>
+                    <span style="font-size:10px;color:var(--text2)">自动检测</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>基调</label>
+                <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:13px">
+                    <span>{{ detected_tone or config.get('tone', '未检测到') }}</span>
+                    <span style="font-size:10px;color:var(--text2)">自动检测</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card">
+        <h3>📐 创作目标</h3>
+        <div style="margin-top:12px">
+            <div class="form-group">
+                <label>状态</label>
+                <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:13px">
+                    <span id="detected-status">{{ detected_status }}</span>
+                    <span style="font-size:10px;color:var(--text2)">自动 · {{ total_chapters }}/{{ config.get('target_chapters', 200) }} 章</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>目标章节数</label>
+                <input type="number" name="target_chapters" class="form-control" value="{{ config.get('target_chapters', 200) }}">
+            </div>
+            <div class="form-group">
+                <label>目标每章字数</label>
+                <input type="number" name="target_words_per_chapter" class="form-control" value="{{ config.get('target_words_per_chapter', 2800) }}">
+            </div>
+            <div class="form-group">
+                <label>投稿平台</label>
+                <input type="text" name="platform" class="form-control" value="{{ config.get('platform', '') }}" placeholder="番茄小说 / 起点 / 晋江">
+            </div>
+        </div>
+    </div>
+</div>
+
+<div style="margin-top:16px">
+    <button type="submit" class="btn btn-primary">💾 保存设置</button>
+</div>
+</form>
+{% endblock %}

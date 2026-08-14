@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}连载追踪 · {{ config.get('title') or slug }}{% endblock %}
+{% block content %}
+
+<h1 class="page-title">📡 连载追踪</h1>
+<p class="page-subtitle">长篇连载防穿帮台账：角色状态 / 伏笔 / 承诺 / 时间线 / 分卷 / 审计记录</p>
+
+{% if not has_tracking %}
+<div class="card">
+    <p style="color:var(--text-2)">该项目还没有 <code>连载追踪.md</code>，去 novels 目录创建一个即可自动展示。</p>
+</div>
+{% endif %}
+
+{% for sec in sections %}
+<div class="card" style="margin-bottom:16px">
+    <h3 style="display:flex;align-items:center;gap:8px;margin-bottom:12px">{{ sec.title }}</h3>
+
+    {% if sec.notes %}
+    <div style="margin-bottom:12px;font-size:12px;color:var(--text-2);line-height:1.7">
+        {% for n in sec.notes %}
+        <div>📌 {{ n }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% for t in sec.tables %}
+    {% if t.subtitle %}<h4 style="margin:16px 0 8px;font-size:13px;color:var(--accent)">{{ t.subtitle }}</h4>{% endif %}
+    <div class="table-wrap" style="margin-bottom:12px">
+        <table style="width:100%;font-size:12px">
+            <thead>
+                <tr>
+                    {% for h in t.headers %}
+                    <th style="text-align:left;white-space:nowrap">{{ h }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in t.rows %}
+                <tr>
+                    {% for cell in row %}
+                    <td style="vertical-align:top">
+                        {%- if cell.startswith('✅') %}<span class="pill pill-green">{{ cell }}</span>
+                        {%- elif cell.startswith('⏳') or cell.startswith('🔒') %}<span class="pill pill-orange">{{ cell }}</span>
+                        {%- elif cell.startswith('❌') or cell.startswith('⚠️') %}<span class="pill pill-red">{{ cell }}</span>
+                        {%- elif cell.startswith('ch') %}<code>{{ cell }}</code>
+                        {%- else %}{{ cell }}{% endif %}
+                    </td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endfor %}
+
+    {% if sec.lists %}
+    <ul style="margin:8px 0 0 4px;list-style:none;font-size:12px;color:var(--text-2);line-height:1.9">
+        {% for item in sec.lists %}
+        <li style="padding:2px 0">• {{ item }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+</div>
+{% endfor %}
+
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}人物详情 — {{ slug }}{% endblock %}
+{% block content %}
+<h1 class="page-title">👤 人物详情</h1>
+<p class="page-subtitle" style="margin-bottom:4px">
+    <a href="/novels/{{ slug }}" style="color:var(--accent);text-decoration:none">{{ slug }}</a>
+    / <a href="/novels/{{ slug }}/characters" style="color:var(--accent);text-decoration:none">人物</a>
+    / {{ ch.name }}
+</p>
+
+<div class="card">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+        <div style="width:48px;height:48px;border-radius:24px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700">
+            {{ ch.name[0] }}
+        </div>
+        <div>
+            <h2 style="font-size:18px">{{ ch.name }}</h2>
+            <span style="font-size:12px;color:var(--text2)">角色 · {{ ch.get('role', '配角') }}</span>
+        </div>
+    </div>
+    <div style="line-height:1.8;color:var(--text2);font-size:14px;white-space:pre-wrap">{{ ch.text }}</div>
+</div>
+
+<div style="margin-top:12px;display:flex;gap:12px">
+    {% if index > 0 %}
+    <a href="/novels/{{ slug }}/character/{{ index - 1 }}" class="btn">← 上一个</a>
+    {% endif %}
+    <a href="/novels/{{ slug }}/characters" class="btn">← 返回人物列表</a>
+    {% if index + 1 < total %}
+    <a href="/novels/{{ slug }}/character/{{ index + 1 }}" class="btn">下一个 →</a>
+    {% endif %}
+</div>
+{% endblock %}

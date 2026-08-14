@@ -306,8 +306,9 @@ struct MenuBarView: View {
                 }
             }
             
-            // 操作按钮
+            // 操作按钮（5 个按钮平均排布）
             HStack {
+                Spacer()
                 Button(action: {
                     Task {
                         await dataStore.refreshAll()
@@ -345,12 +346,38 @@ struct MenuBarView: View {
                 Spacer()
                 
                 Button(action: {
+                    NotificationCenter.default.post(name: .closePopoverForPanel, object: nil)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                        NovelWebServer.ensureRunning { ok in
+                            DispatchQueue.main.async {
+                                if ok {
+                                    NovelWebWindowController.shared.show()
+                                } else {
+                                    let alert = NSAlert()
+                                    alert.messageText = "小说 Web 启动失败"
+                                    alert.informativeText = "请确认 web/.venv 已就绪：\ncd web && uv venv && uv pip install -r requirements.txt"
+                                    alert.alertStyle = .warning
+                                    alert.runModal()
+                                }
+                            }
+                        }
+                    }
+                }) {
+                    Label("小说", systemImage: "book.closed")
+                        .font(.caption)
+                }
+                
+                Spacer()
+                
+                Button(action: {
                     NSApplication.shared.terminate(nil)
                 }) {
                     Label("退出", systemImage: "power")
                         .font(.caption)
                 }
                 .keyboardShortcut("q", modifiers: .command)
+                
+                Spacer()
             }
         }
         .padding()

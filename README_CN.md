@@ -13,7 +13,7 @@
   <img alt="License" src="https://img.shields.io/github/license/zdx52/AIUsageMonitor">
   <img alt="Swift" src="https://img.shields.io/badge/swift-5.0-orange">
   <img alt="macOS" src="https://img.shields.io/badge/platform-macOS-lightgray">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.5.3-blue">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.6.0-blue">
 </p>
 
 AIUsageMonitor 是一个 macOS 菜单栏轻量级系统监控工具，实时显示笔记本温度、CPU 使用率、AI 用量（DeepSeek / Tavily / OpenCode GO）和 Hindsight 记忆状态。支持自动刷新和手动刷新。
@@ -120,6 +120,12 @@ cp -r .build/release/AIUsageMonitor AIUsageMonitor.app/Contents/MacOS/
 ```
 
 ## 更新内容
+
+### v1.6.0
+
+- 📖 **小说创作 Web 集成** — 新增「小说」按钮（看板旁），一键启动内置 Flask Web UI（端口 8080）并在原生窗口打开；web/ 目录随本项目维护
+- 🚀 **自动拉起服务** — 点击按钮自动检测并启动小说 Web 服务（web/.venv），退出应用时自动清理
+- 🎨 **Web UI 精美升级** — 小说列表渐变封面卡片、总览页 hero + 统计卡 + SVG 字数面积图（悬停详情）+ 质量总览、章节页 pill 徽章表格、人物页渐变头像卡片、世界观章节卡片、故事架构卷时间线、连载追踪状态徽章、药丸按钮与毛玻璃质感统一
 
 ### v1.5.3
 

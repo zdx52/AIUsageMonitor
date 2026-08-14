@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}人物 — {{ slug }}{% endblock %}
+{% block content %}
+<h1 class="page-title">👥 人物</h1>
+<p class="page-subtitle">{{ slug }}</p>
+
+{% if mains %}
+<div style="margin-bottom:24px">
+    <h2 class="section-title">⭐ 主角 <span style="font-size:12px;color:var(--text-2);font-weight:400">（{{ mains|length }}人）</span></h2>
+    <div class="card-grid">
+        {% for idx, ch in mains %}
+        <a href="/novels/{{ slug }}/character/{{ idx }}" class="card char-card">
+            <div class="char-avatar" data-seed="{{ ch.name }}">{{ ch.name[0] }}</div>
+            <div class="char-body">
+                <div class="char-name">{{ ch.name }}</div>
+                {% if ch.text %}
+                <div class="char-bio">{{ ch.text.split('\n')[:5]|join('\n')|replace('\n', '<br>')|safe }}</div>
+                {% endif %}
+                <div class="char-link">查看详情 →</div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{% if supports %}
+<h2 class="section-title">👤 配角 <span style="font-size:12px;color:var(--text-2);font-weight:400">（{{ supports|length }}人）</span></h2>
+<div class="card-grid">
+    {% for idx, ch in supports %}
+    <a href="/novels/{{ slug }}/character/{{ idx }}" class="card char-card">
+        <div class="char-avatar" data-seed="{{ ch.name }}">{{ ch.name[0] }}</div>
+        <div class="char-body">
+            <div class="char-name">{{ ch.name }}</div>
+            {% if ch.text %}
+            <div class="char-bio">{{ ch.text.split('\n')[:5]|join('\n')|replace('\n', '<br>')|safe }}</div>
+            {% endif %}
+            <div class="char-link">查看详情 →</div>
+        </div>
+    </a>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if not mains and not supports %}
+<div class="card"><p style="color:var(--text-2)">尚未创建人物档案。请先运行 gen_cn_characters.py 或手动编写 characters.md。</p></div>
+{% endif %}
+
+<script>
+(function() {
+    const COLORS = [
+        'linear-gradient(135deg, #0a84ff, #5e5ce6)',
+        'linear-gradient(135deg, #30d158, #64d2ff)',
+        'linear-gradient(135deg, #ff9f0a, #ff453a)',
+        'linear-gradient(135deg, #bf5af2, #0a84ff)',
+        'linear-gradient(135deg, #ff6482, #ff9f0a)',
+        'linear-gradient(135deg, #5e5ce6, #bf5af2)',
+        'linear-gradient(135deg, #64d2ff, #0a84ff)',
+        'linear-gradient(135deg, #ff375f, #bf5af2)',
+    ];
+    function hash(str) {
+        let h = 0;
+        for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
+        return h;
+    }
+    document.querySelectorAll('.char-avatar[data-seed]').forEach(el => {
+        el.style.background = COLORS[hash(el.dataset.seed || '') % COLORS.length];
+    });
+})();
+</script>
+{% endblock %}

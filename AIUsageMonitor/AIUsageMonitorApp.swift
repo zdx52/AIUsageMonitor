@@ -213,6 +213,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         titleUpdateTimer?.invalidate()
         hindsightTimer?.invalidate()
         temperatureTimer?.invalidate()
+        NovelWebServer.shutdown()
         if let monitor = eventMonitor {
             NSEvent.removeMonitor(monitor)
         }

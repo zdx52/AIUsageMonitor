@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}文风 — {{ slug }}{% endblock %}
+{% block content %}
+<h1 class="page-title">🎙️ 文风 / 语音</h1>
+<p class="page-subtitle">{{ slug }} — 写作风格定义</p>
+
+{% if sections %}
+<div class="card-grid" style="grid-template-columns:1fr">
+{% for name, content in sections.items() %}
+    <div class="card">
+        <h3>{{ name }}</h3>
+        <div style="margin-top:8px;line-height:1.8;color:var(--text2)">
+            {{ content.split('\n')[:25]|join('\n')|replace('\n', '<br>')|safe }}
+            {% if content.split('\n')|length > 25 %}
+            <details style="margin-top:8px">
+                <summary style="cursor:pointer;color:var(--accent);font-size:13px">展开全部</summary>
+                <div style="margin-top:8px">{{ content|replace('\n', '<br>')|safe }}</div>
+            </details>
+            {% endif %}
+        </div>
+    </div>
+{% endfor %}
+</div>
+<div style="margin-top:12px">
+    <a href="/novels/{{ slug }}/edit?file=voice.md" class="btn">✏️ 编辑 voice.md</a>
+</div>
+{% else %}
+<div class="card"><p style="color:var(--text2)">尚未设置文风。请编辑 voice.md。</p></div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+{% block title %}质量检测 · {{ config.get('title') or slug }}{% endblock %}
+{% block content %}
+
+{% set tgt_words = config.get('target_words_per_chapter', 2800) %}
+
+<h1 class="page-title">📊 质量检测</h1>
+<p class="page-subtitle">复用 scripts/ 质检工具链：番茄6项指标 · 重复检测 · 角色出场 · 时间线</p>
+
+{% if not quality.has_scripts %}
+<div class="card">
+    <p style="color:var(--red)">⚠️ scripts/ 质检模块加载失败（web 需在 novel-pipeline 根目录下运行：<code>uv run python web/app.py</code>）</p>
+</div>
+{% else %}
+
+<!-- 统计行 -->
+<div class="stat-row">
+    <div class="stat-box"><div class="num">{{ total }}</div><div class="label">总章数</div></div>
+    <div class="stat-box"><div class="num" style="color:var(--green)">{{ passed }}</div><div class="label">达标</div></div>
+    <div class="stat-box"><div class="num" style="color:{% if total and passed/total >= 1 %}var(--green){% elif total and passed/total >= 0.7 %}var(--orange){% else %}var(--red){% endif %}">{{ "%.0f"|format(passed/total*100) if total else 0 }}%</div><div class="label">达标率</div></div>
+    <div class="stat-box"><div class="num" style="color:var(--accent)">{{ quality.duplicates|length }}</div><div class="label">重复章</div></div>
+    <div class="stat-box"><div class="num" style="color:var(--accent)">{{ quality.cast|length }}</div><div class="label">出场角色</div></div>
+    <div class="stat-box"><div class="num" style="color:var(--accent)">{{ quality.timeline|length }}</div><div class="label">时间表述</div></div>
+</div>
+
+<!-- 番茄 6 项指标 -->
+<h2 style="margin:24px 0 12px">🍅 番茄 6 项指标</h2>
+<div class="card">
+    <div style="font-size:12px;color:var(--text2);margin-bottom:12px">
+        纯汉字 2500-3000 · 对话占比 ≥25% · 对话段 ≥50% · 均段 ≤30字 · 超60字段 ≤1 · 禁词 = 0
+    </div>
+    <div style="overflow-x:auto">
+    <table style="width:100%;font-size:12px">
+        <thead>
+            <tr>
+                <th style="text-align:left;padding:8px 10px;border-bottom:1px solid var(--border)">章</th>
+                <th style="text-align:center;padding:8px 10px;border-bottom:1px solid var(--border)">字数</th>
+                <th style="text-align:center;padding:8px 10px;border-bottom:1px solid var(--border)">对话%</th>
+                <th style="text-align:center;padding:8px 10px;border-bottom:1px solid var(--border)">对话段%</th>
+                <th style="text-align:center;padding:8px 10px;border-bottom:1px solid var(--border)">均段</th>
+                <th style="text-align:center;padding:8px 10px;border-bottom:1px solid var(--border)">超60</th>
+                <th style="text-align:center;padding:8px 10px;border-bottom:1px solid var(--border)">禁词/一丝</th>
+                <th style="text-align:center;padding:8px 10px;border-bottom:1px solid var(--border)">状态</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for c in quality.chapters %}
+            {% set ok_words = c.total >= 2500 and c.total <= 3000 %}
+            {% set ok_dialogue = c.dialogue_pct >= 25 %}
+            {% set ok_dp = c.dialogue_para_pct >= 50 %}
+            {% set ok_avg = c.avg_para <= 30 %}
+            {% set ok_long = c.long_paras <= 1 %}
+            {% set ok_banned = not c.banned and c.yisi_suspect == 0 %}
+            <tr>
+                <td style="padding:6px 10px;border-bottom:1px solid var(--border);font-weight:600">ch{{ "%02d"|format(c.num) }}</td>
+                <td style="padding:6px 10px;border-bottom:1px solid var(--border);text-align:center;color:{% if ok_words %}var(--green){% else %}var(--red){% endif %}">{{ c.total }}</td>
+                <td style="padding:6px 10px;border-bottom:1px solid var(--border);text-align:center;color:{% if ok_dialogue %}var(--green){% else %}var(--red){% endif %}">{{ c.dialogue_pct }}%</td>
+                <td style="padding:6px 10px;border-bottom:1px solid var(--border);text-align:center;color:{% if ok_dp %}var(--green){% else %}var(--red){% endif %}">{{ c.dialogue_para_pct }}%</td>
+                <td style="padding:6px 10px;border-bottom:1px solid var(--border);text-align:center;color:{% if ok_avg %}var(--green){% else %}var(--red){% endif %}">{{ c.avg_para }}</td>
+                <td style="padding:6px 10px;border-bottom:1px solid var(--border);text-align:center;color:{% if ok_long %}var(--green){% else %}var(--red){% endif %}">{{ c.long_paras }}</td>
+                <td style="padding:6px 10px;border-bottom:1px solid var(--border);text-align:center;color:{% if ok_banned %}var(--green){% else %}var(--red){% endif %}">
+                    {% if c.banned %}{{ c.banned|length }}词{% elif c.yisi_suspect %}{{ c.yisi_suspect }}×一丝{% else %}0{% endif %}
+                </td>
+                <td style="padding:6px 10px;border-bottom:1px solid var(--border);text-align:center">
+                    {% if c.ok %}<span style="color:var(--green);font-weight:700">✅</span>
+                    {% else %}<span style="color:var(--red);font-weight:700">❌</span>{% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+
+<!-- 字数走势 -->
+{% if quality.chapters %}
+<h2 style="margin:24px 0 12px">📝 每章字数 vs 目标</h2>
+<div class="card">
+    <div class="chart-bar" id="quality-chart" style="position:relative">
+        {% set max_chars = quality.chapters|map(attribute='total')|max %}
+        {% set scale = 100 %}
+        {% for c in quality.chapters %}
+        {% set h = (c.total / (max_chars or 1) * scale)|round %}
+        {% set good = c.total >= 2500 and c.total <= 3000 %}
+        <div class="bar" style="height:{{ h }}px;background:{% if good %}var(--green){% elif c.total > 3000 %}var(--orange){% else %}var(--red){% endif %}"
+             title="ch{{ c.num }}: {{ c.total }}字"></div>
+        {% endfor %}
+        {% set target_px = (tgt_words / (max_chars or 1) * scale)|round %}
+        <div class="target-line" style="position:absolute;left:0;right:0;bottom:{{ target_px }}px;height:1px;border-top:2px dashed var(--accent);z-index:2" title="目标: {{ tgt_words }}字"></div>
+    </div>
+    <div class="chart-label">
+        {% for c in quality.chapters %}
+        <span title="ch{{ c.num }}">{{ c.num }}</span>
+        {% endfor %}
+    </div>
+    <div style="font-size:12px;color:var(--text2);margin-top:8px">绿色=2500-3000达标 · 橙色=超3000 · 红色=不足2500 · 蓝色虚线=目标 {{ tgt_words }} 字</div>
+</div>
+{% endif %}
+
+<!-- 重复检测 -->
+<h2 style="margin:24px 0 12px">🔁 重复文本检测</h2>
+<div class="card">
+    {% if quality.duplicates %}
+    <table style="width:100%;font-size:12px">
+        <thead><tr>
+            <th style="text-align:left;padding:8px 10px;border-bottom:1px solid var(--border)">章节</th>
+            <th style="text-align:center;padding:8px 10px;border-bottom:1px solid var(--border)">紧邻重复（块）</th>
+            <th style="text-align:center;padding:8px 10px;border-bottom:1px solid var(--border)">远处重复（块）</th>
+            <th style="text-align:center;padding:8px 10px;border-bottom:1px solid var(--border)">状态</th>
+        </tr></thead>
+        <tbody>
+        {% for d in quality.duplicates %}
+        <tr>
+            <td style="padding:6px 10px;border-bottom:1px solid var(--border);font-weight:600">ch{{ "%02d"|format(d.num) }}</td>
+            <td style="padding:6px 10px;border-bottom:1px solid var(--border);text-align:center">{{ d.adjacent }}</td>
+            <td style="padding:6px 10px;border-bottom:1px solid var(--border);text-align:center">{{ d.distant }}</td>
+            <td style="padding:6px 10px;border-bottom:1px solid var(--border);text-align:center"><span style="color:var(--red);font-weight:700">❌ 需修复</span></td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color:var(--green);font-size:13px">✅ 无重复段落，干净！</p>
+    {% endif %}
+</div>
+
+<!-- 角色出场 -->
+<h2 style="margin:24px 0 12px">🎭 角色出场追踪</h2>
+<div class="card">
+    {% if quality.cast %}
+    <div style="font-size:12px;color:var(--text2);margin-bottom:12px">出场章节分布（提及≠出场，粗扫供参考）· 共 {{ quality.cast|length }} 个角色</div>
+    {% for c in quality.cast %}
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap">
+        <div style="width:110px;font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ c.name }}</div>
+        <div style="flex:1;min-width:200px;height:18px;background:var(--bg3);border-radius:3px;position:relative;overflow:hidden">
+            {% set span = quality.chapters|length if quality.chapters else 40 %}
+            {% set first_px = ((c.first - 1) / span * 100)|round(1) %}
+            {% set last_px = (c.last / span * 100)|round(1) %}
+            <div style="position:absolute;left:{{ first_px }}%;width:{{ (last_px - first_px)|round(1) }}%;top:0;bottom:0;background:linear-gradient(90deg,var(--accent),var(--green));opacity:0.75;border-radius:3px" title="ch{{ c.first }}-ch{{ c.last }}"></div>
+            {% for n in c.chapters %}
+            {% set px = ((n - 1) / span * 100)|round(1) %}
+            <div style="position:absolute;left:{{ px }}%;top:0;bottom:0;width:6px;background:#fff;opacity:0.9" title="ch{{ n }}"></div>
+            {% endfor %}
+        </div>
+        <div style="width:150px;font-size:11px;color:var(--text2);white-space:nowrap">ch{{ c.first }} → ch{{ c.last }} · {{ c.count }}章</div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <p style="color:var(--text2);font-size:13px">暂无角色出场数据（需要 characters.md）</p>
+    {% endif %}
+</div>
+
+<!-- 时间线表述 -->
+<h2 style="margin:24px 0 12px">⏱️ 时间线表述清单</h2>
+<div class="card">
+    {% if quality.timeline %}
+    <div style="font-size:12px;color:var(--text2);margin-bottom:12px">共 {{ quality.timeline|length }} 处时间表述，供人工复核（硬年份/年限）</div>
+    <div style="overflow-x:auto">
+    <table style="width:100%;font-size:12px">
+        <thead><tr>
+            <th style="text-align:left;padding:8px 10px;border-bottom:1px solid var(--border)">章节</th>
+            <th style="text-align:left;padding:8px 10px;border-bottom:1px solid var(--border)">行号</th>
+            <th style="text-align:left;padding:8px 10px;border-bottom:1px solid var(--border)">类型</th>
+            <th style="text-align:left;padding:8px 10px;border-bottom:1px solid var(--border)">原文片段</th>
+        </tr></thead>
+        <tbody>
+        {% for t in quality.timeline %}
+        <tr>
+            <td style="padding:6px 10px;border-bottom:1px solid var(--border);white-space:nowrap">ch{{ "%02d"|format(t.num) }}</td>
+            <td style="padding:6px 10px;border-bottom:1px solid var(--border);color:var(--text2)">{{ t.line }}</td>
+            <td style="padding:6px 10px;border-bottom:1px solid var(--border)">{% if t.kind == '硬年份' %}<span style="color:var(--accent)">硬年份</span>{% else %}<span style="color:var(--orange)">年限</span>{% endif %}</td>
+            <td style="padding:6px 10px;border-bottom:1px solid var(--border);color:var(--text2)">{{ t.text }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+    {% else %}
+    <p style="color:var(--text2);font-size:13px">暂无时间表述</p>
+    {% endif %}
+</div>
+
+{% endif %}
+{% endblock %}

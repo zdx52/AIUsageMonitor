@@ -48,3 +48,8 @@ AIUsageMonitor/AIUsageMonitor
 
 # Hermes agent
 .hermes/
+
+# Novel web (Flask)
+web/.venv/
+web/__pycache__/
+web/scripts/__pycache__/

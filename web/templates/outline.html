@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+{% block title %}故事架构 — {{ slug }}{% endblock %}
+{% block content %}
+<h1 class="page-title">📋 故事架构</h1>
+<p class="page-subtitle">{{ slug }}</p>
+
+{% if volumes %}
+<div class="vol-list">
+    {% for vol in volumes %}
+    {% if vol.is_parent %}
+    <!-- 父卷（卷1《杀穿红星厂》= 第1-40章） -->
+    <div class="vol-card">
+        <div class="vol-header" onclick="toggleVol(this)">
+            <div class="vol-title">
+                <span class="vol-toggle">▶</span>
+                <span>{{ vol.name }}</span>
+            </div>
+            {% if vol.range %}
+            <div class="vol-meta">{{ vol.range[1] - vol.range[0] + 1 }} 章（第{{ vol.range[0] }}-{{ vol.range[1] }}章）</div>
+            {% endif %}
+        </div>
+        <div class="vol-body" style="display:none">
+            {% for sub in vol.subvolumes %}
+            <div class="sub-vol-card">
+                <div class="sub-vol-header" onclick="toggleSubVol(this)">
+                    <span class="ch-toggle">▶</span>
+                    <span class="ch-num">{% if sub.range %}第{{ sub.range[0] }}-{{ sub.range[1] }}章{% endif %}</span>
+                    <span class="ch-title">{{ sub.name }}</span>
+                </div>
+                <div class="sub-vol-body" style="display:none">
+                    {% if sub.descriptions %}
+                    <div class="vol-desc">
+                        {% for key, val in sub.descriptions.items() %}
+                        {% if key not in ('第1-7章具体设计',) %}
+                        <div class="desc-item"><strong>{{ key }}：</strong>{{ val }}</div>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    {% if sub.chapters %}
+                    <div class="vol-chapters">
+                        {% for ch in sub.chapters %}
+                        <div class="ch-card">
+                            <div class="ch-header" onclick="toggleCh(this)">
+                                <span class="ch-toggle">▶</span>
+                                <span class="ch-num">第{{ ch.num }}章</span>
+                                <span class="ch-title">{{ ch.title }}</span>
+                            </div>
+                            {% if ch.details %}
+                            <div class="ch-body" style="display:none">
+                                {% for key, val in ch.details.items() %}
+                                <div class="ch-detail"><strong>{{ key }}：</strong>{{ val }}</div>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% else %}
+    <!-- 普通卷 -->
+    <div class="vol-card">
+        <div class="vol-header" onclick="toggleVol(this)">
+            <div class="vol-title">
+                <span class="vol-toggle">▶</span>
+                <span>{{ vol.name }}</span>
+            </div>
+            {% if vol.range %}
+            <div class="vol-meta">{{ vol.range[1] - vol.range[0] + 1 }} 章（第{{ vol.range[0] }}-{{ vol.range[1] }}章）</div>
+            {% endif %}
+        </div>
+        <div class="vol-body" style="display:none">
+            <!-- Volume descriptions -->
+            {% if vol.descriptions %}
+            <div class="vol-desc">
+                {% for key, val in vol.descriptions.items() %}
+                {% if key not in ('第1-7章具体设计',) %}
+                <div class="desc-item">
+                    <strong>{{ key }}：</strong>{{ val }}
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Chapter list -->
+            {% if vol.chapters %}
+            <div class="vol-chapters">
+                {% for ch in vol.chapters %}
+                <div class="ch-card">
+                    <div class="ch-header" onclick="toggleCh(this)">
+                        <span class="ch-toggle">▶</span>
+                        <span class="ch-num">第{{ ch.num }}章</span>
+                        <span class="ch-title">{{ ch.title }}</span>
+                    </div>
+                    {% if ch.details %}
+                    <div class="ch-body" style="display:none">
+                        {% for key, val in ch.details.items() %}
+                        <div class="ch-detail">
+                            <strong>{{ key }}：</strong>{{ val }}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+    {% endfor %}
+</div>
+{% else %}
+<div class="card"><p style="color:var(--text2)">尚未创建大纲。请在 novels/{{ slug }}/ 下编写 outline.md。</p></div>
+{% endif %}
+
+<style>
+.vol-list { display:flex; flex-direction:column; gap:12px; }
+.vol-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    position: relative;
+    box-shadow: var(--shadow-card);
+}
+.vol-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--purple), transparent);
+    opacity: 0.6;
+}
+.vol-header {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 20px; cursor:pointer; user-select:none;
+    transition:background 0.15s;
+}
+.vol-header:hover { background: var(--bg3); }
+.vol-title { display:flex; align-items:center; gap:10px; font-size:15px; font-weight:600; }
+.vol-toggle {
+    font-size:10px; color:var(--accent); transition:transform 0.2s;
+    display:inline-flex; align-items:center; justify-content:center;
+    width:20px; height:20px; border-radius:6px; background:var(--accent-soft);
+}
+.vol-card.open .vol-toggle { transform:rotate(90deg); }
+.vol-meta { font-size:12px; color:var(--text2); font-family:var(--mono); }
+.vol-body { border-top:1px solid var(--border); padding:16px 20px; }
+.vol-desc { margin-bottom:16px; }
+.desc-item {
+    margin-bottom:8px; line-height:1.7; font-size:13px; color:var(--text2);
+    display:flex; gap:8px; align-items:baseline;
+}
+.desc-item strong {
+    color:var(--accent); flex-shrink:0;
+    font-size:11px; font-weight:600;
+    background:var(--accent-soft); border:1px solid var(--border2);
+    padding:1px 8px; border-radius:9999px;
+}
+
+.vol-chapters { display:flex; flex-direction:column; gap:8px; }
+
+/* 子卷卡片（父卷内嵌，如 卷2 上·洋尺子） */
+.sub-vol-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 10px;
+    overflow: hidden;
+}
+.sub-vol-header {
+    display:flex; align-items:center; gap:8px;
+    padding:10px 14px; cursor:pointer; user-select:none;
+    transition:background 0.15s; font-size:13px;
+    border-bottom: 1px solid var(--border);
+}
+.sub-vol-header:hover { background: var(--bg3); }
+.sub-vol-body { padding: 12px 14px; }
+.ch-card {
+    background: var(--bg);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    overflow:hidden;
+    transition:border-color 0.15s;
+}
+.ch-card:hover { border-color: var(--border2); }
+.ch-header {
+    display:flex; align-items:center; gap:8px;
+    padding:10px 14px; cursor:pointer; user-select:none;
+    transition:background 0.15s; font-size:13px;
+}
+.ch-header:hover { background: var(--bg3); }
+.ch-toggle {
+    font-size:9px; color:var(--accent); transition:transform 0.2s;
+    display:inline-flex; align-items:center; justify-content:center;
+    width:16px; height:16px; border-radius:5px; background:var(--accent-soft);
+}
+.ch-card.open .ch-toggle { transform:rotate(90deg); }
+.ch-num {
+    color:var(--accent); font-weight:600; min-width:52px;
+    font-size:11px; background:var(--accent-soft); border-radius:9999px;
+    padding:1px 8px; text-align:center;
+}
+.ch-title { color:var(--text); }
+.ch-body { border-top:1px solid var(--border); padding:12px 14px; }
+.ch-detail { margin-bottom:6px; font-size:12px; line-height:1.6; color:var(--text2); }
+.ch-detail strong { color:var(--accent); }
+</style>
+
+<script>
+function toggleVol(el) {
+    el.parentElement.classList.toggle('open');
+    const body = el.parentElement.querySelector('.vol-body');
+    body.style.display = body.style.display === 'none' ? 'block' : 'none';
+}
+function toggleCh(el) {
+    el.parentElement.classList.toggle('open');
+    const body = el.parentElement.querySelector('.ch-body');
+    body.style.display = body.style.display === 'none' ? 'block' : 'none';
+}
+function toggleSubVol(el) {
+    el.parentElement.classList.toggle('open');
+    const body = el.parentElement.querySelector('.sub-vol-body');
+    if (body) body.style.display = body.style.display === 'none' ? 'block' : 'none';
+}
+</script>
+{% endblock %}

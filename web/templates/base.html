@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}autonovel-cn{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <a href="/" class="logo">📖 autonovel-cn</a>
+        </div>
+        <ul class="nav-list">
+            <li><a href="/" class="nav-link">🏠 首页</a></li>
+            <li><a href="/settings" class="nav-link">⚙️ 全局设置</a></li>
+        </ul>
+        {% if slug is defined and slug %}
+        <div class="sidebar-section">
+            <div class="sidebar-section-title">{{ config.get('title', slug) if config is defined else slug }}</div>
+            <ul class="nav-list">
+                <li><a href="/novels/{{ slug }}" class="nav-link">📊 总览</a></li>
+                <li><a href="/novels/{{ slug }}/world" class="nav-link">🌍 世界观</a></li>
+                <li><a href="/novels/{{ slug }}/characters" class="nav-link">👥 人物</a></li>
+                <li><a href="/novels/{{ slug }}/outline" class="nav-link">📋 故事架构</a></li>
+                <li><a href="/novels/{{ slug }}/chapters" class="nav-link">📚 章节</a></li>
+                <li><a href="/novels/{{ slug }}/tracking" class="nav-link">📡 连载追踪</a></li>
+                <li><a href="/novels/{{ slug }}/quality" class="nav-link">📊 质量检测</a></li>
+                <li><a href="/novels/{{ slug }}/voice" class="nav-link">🎙️ 文风</a></li>
+                <li style="border-top:1px solid var(--border);margin:4px 0"></li>
+                <li><a href="/novels/{{ slug }}/settings" class="nav-link">⚙️ 小说设置</a></li>
+            </ul>
+        </div>
+        {% endif %}
+        <!-- 侧边栏底部 -->
+        <div class="sidebar-footer">
+            <button class="sf-btn" onclick="location.reload()" title="刷新页面" style="flex:1;font-size:14px;padding:4px 0">🔄</button>
+            <button class="sf-btn" onclick="toggleTheme()" id="theme-toggle" title="切换明暗主题" style="flex:1;font-size:14px;padding:4px 0">🌙</button>
+        </div>
+    </nav>
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+    {% block scripts %}{% endblock %}
+
+<script>
+// ── 明暗主题切换 ──
+function toggleTheme() {
+    const html = document.documentElement;
+    const btn = document.getElementById('theme-toggle');
+    const isLight = html.classList.toggle('light');
+    btn.textContent = isLight ? '☀️' : '🌙';
+    localStorage.setItem('theme', isLight ? 'light' : 'dark');
+}
+// 恢复保存的主题
+(function() {
+    const saved = localStorage.getItem('theme');
+    if (saved === 'light') {
+        document.documentElement.classList.add('light');
+        const btn = document.getElementById('theme-toggle');
+        if (btn) btn.textContent = '☀️';
+    }
+})();
+</script>
+</body>
+</html>

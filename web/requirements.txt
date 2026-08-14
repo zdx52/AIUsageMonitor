@@ -1,0 +1,4 @@
+# AIUsageMonitor 内置小说 Web UI 依赖
+Flask>=3.0.0
+Markdown>=3.6
+python-dotenv>=1.2.2

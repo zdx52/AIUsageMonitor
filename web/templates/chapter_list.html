@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% block title %}章节 — {{ slug }}{% endblock %}
+{% block content %}
+<h1 class="page-title">📚 章节列表</h1>
+<p class="page-subtitle">{{ slug }} — 共 {{ chapters|length }} 章 / {{ "{:,}".format(total_chars) }} 字 / 目标每章 {{ config.get('target_words_per_chapter', 2800) }} 字</p>
+
+{% if vol_groups %}
+{% set target = config.get('target_words_per_chapter', 2800) %}
+
+<div class="vol-list">
+    {% for vol in vol_groups %}
+    <div class="vol-card">
+        <div class="vol-header" onclick="toggleVol(this)">
+            <div class="vol-title">
+                <span class="vol-toggle">▶</span>
+                <span>{{ vol.name }}</span>
+            </div>
+            <div class="vol-meta">{{ vol.chapters|length }} 章 / {{ "{:,}".format(vol.chars) }} 字</div>
+        </div>
+        <div class="vol-body" style="display:none">
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width:90px">章节</th>
+                            <th>标题</th>
+                            <th style="text-align:center;width:90px">字数</th>
+                            <th style="text-align:center;width:90px">达标</th>
+                            <th style="text-align:center;width:70px">导出</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for c in vol.chapters %}
+                        {% set pct = (c.chars / target * 100)|round %}
+                        <tr>
+                            <td style="font-weight:600;font-size:12px">
+                                <a href="javascript:void(0)" onclick="viewChapter('{{ slug }}', {{ c.name.replace('ch_', '') }})" style="color:var(--accent);text-decoration:none;cursor:pointer">{{ c.name.replace('ch_', '第') }}章</a>
+                            </td>
+                            <td><a href="javascript:void(0)" onclick="viewChapter('{{ slug }}', {{ c.name.replace('ch_', '') }})" style="color:var(--text);text-decoration:none;cursor:pointer">{{ c.title or '-' }}</a></td>
+                            <td style="text-align:center;font-family:var(--mono);font-size:12px">{{ "{:,}".format(c.chars) }}</td>
+                            <td style="text-align:center">
+                                {% if pct >= 100 %}<span class="pill pill-green">✅ {{ pct }}%</span>
+                                {% elif pct >= 75 %}<span class="pill pill-orange">🟡 {{ pct }}%</span>
+                                {% else %}<span class="pill pill-red">⚠️ {{ pct }}%</span>{% endif %}
+                            </td>
+                            <td style="text-align:center">
+                                {% if c.ch_exported %}
+                                    {% if c.ch_export_current %}
+                                    <span style="color:var(--green)" title="已导出且为最新">✅</span>
+                                    {% else %}
+                                    <span style="color:var(--orange)" title="已导出但源文件已更新">🔄</span>
+                                    {% endif %}
+                                {% else %}
+                                <span style="color:var(--text-3);font-size:11px">—</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card"><p style="color:var(--text-2)">尚无章节。</p></div>
+{% endif %}
+
+<!-- 章节内容弹窗 -->
+<div id="chapter-modal">
+    <div class="ch-modal-box">
+        <div class="ch-modal-head">
+            <div>
+                <div class="ch-modal-title" id="ch-modal-title">加载中...</div>
+                <div class="ch-modal-sub">按 Esc 关闭</div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center">
+                <button class="btn btn-sm" onclick="copyChapter()" id="ch-copy-btn" style="display:none">📋 复制</button>
+                <button class="btn btn-sm" onclick="closeChapterModal()">关闭</button>
+                <span class="ch-modal-close" onclick="closeChapterModal()">✕</span>
+            </div>
+        </div>
+        <div class="ch-modal-body" id="ch-modal-body"></div>
+    </div>
+</div>
+
+<script>
+let _chapterContent = '';
+let _chapterNum = 0;
+
+function viewChapter(slug, chNum) {
+    const modal = document.getElementById('chapter-modal');
+    const titleEl = document.getElementById('ch-modal-title');
+    const bodyEl = document.getElementById('ch-modal-body');
+    const copyBtn = document.getElementById('ch-copy-btn');
+    
+    modal.style.display = 'flex';
+    titleEl.textContent = `第${chNum}章 加载中...`;
+    bodyEl.textContent = '加载中...';
+    copyBtn.style.display = 'none';
+    
+    fetch(`/api/novels/${slug}/chapter/${chNum}/content`)
+        .then(r => r.json())
+        .then(data => {
+            if (data.ok) {
+                _chapterContent = data.title + '\n\n' + data.content;
+                _chapterNum = data.num;
+                titleEl.textContent = `第${data.num}章 ${data.title}`;
+                bodyEl.textContent = data.content;
+                copyBtn.style.display = 'inline-block';
+            } else {
+                titleEl.textContent = '加载失败';
+                bodyEl.textContent = data.error || '未知错误';
+            }
+        })
+        .catch(e => {
+            titleEl.textContent = '网络错误';
+            bodyEl.textContent = e.message;
+        });
+}
+
+function closeChapterModal() {
+    document.getElementById('chapter-modal').style.display = 'none';
+}
+
+function copyChapter() {
+    const content = _chapterContent;
+    const chNum = _chapterNum;
+    if (!content) return;
+    const text = _chapterContent;
+    const btn = document.getElementById('ch-copy-btn');
+    navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✅ 已复制';
+        setTimeout(() => { btn.textContent = '📋 复制'; }, 2000);
+    }).catch(() => {
+        const ta = document.createElement('textarea');
+        ta.value = content;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        btn.textContent = '✅ 已复制';
+        setTimeout(() => { btn.textContent = '📋 复制'; }, 2000);
+    });
+}
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeChapterModal();
+});
+
+document.getElementById('chapter-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeChapterModal();
+});
+
+function toggleVol(el) {
+    el.parentElement.classList.toggle('open');
+    const body = el.parentElement.querySelector('.vol-body');
+    if (body) body.style.display = body.style.display === 'none' ? 'block' : 'none';
+}
+</script>
+{% endblock %}

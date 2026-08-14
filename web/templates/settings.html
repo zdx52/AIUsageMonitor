@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}设置 — autonovel-cn{% endblock %}
+{% block content %}
+<h1 class="page-title">⚙️ 设置</h1>
+<p class="page-subtitle">模型和环境配置</p>
+
+<form method="POST">
+    <div class="row" style="display:flex;gap:16px">
+        <div class="form-group" style="flex:1">
+            <label>✍️ 写作模型（LLM_WRITER_MODEL）</label>
+            <select name="LLM_WRITER_MODEL" class="form-control">
+                {% for m in models %}
+                <option value="{{ m }}" {% if env.get('LLM_WRITER_MODEL', '') == m %}selected{% endif %}>{{ m }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group" style="flex:1">
+            <label>🔍 评估模型（LLM_JUDGE_MODEL）</label>
+            <select name="LLM_JUDGE_MODEL" class="form-control">
+                {% for m in models %}
+                <option value="{{ m }}" {% if env.get('LLM_JUDGE_MODEL', '') == m %}selected{% endif %}>{{ m }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+    <div class="form-group" style="margin-top:8px">
+        <label>📂 小说目录（NOVELS_PATH）</label>
+        <div style="display:flex;gap:8px">
+            <input type="text" name="NOVELS_PATH" class="form-control" id="novels-path-input"
+                   value="{{ env.get('NOVELS_PATH', '') }}" placeholder="留空则默认 novel-pipeline/../novels/" style="flex:1">
+            <button type="button" class="btn" onclick="pickDirectory()">📂 选择</button>
+        </div>
+        <div style="color:var(--text2);font-size:12px;margin-top:2px">当前路径：<code>{{ novels_dir }}</code></div>
+    </div>
+    <button type="submit" class="btn btn-primary" style="margin-top:12px">💾 保存</button>
+</form>
+
+<script>
+function pickDirectory() {
+    const input = document.getElementById('novels-path-input');
+    const modal = document.getElementById('dir-browser-modal');
+    if (modal) {
+        modal.style.display = 'flex';
+        loadDir('');
+        return;
+    }
+    const overlay = document.createElement('div');
+    overlay.id = 'dir-browser-modal';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;font-family:var(--font)';
+    overlay.onclick = function(e) { if (e.target === overlay) overlay.style.display = 'none'; };
+    
+    const box = document.createElement('div');
+    box.style.cssText = 'background:var(--bg2);border:1px solid var(--border);border-radius:8px;width:600px;max-height:70vh;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,0.4)';
+    
+    const header = document.createElement('div');
+    header.style.cssText = 'padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center';
+    header.innerHTML = '<span style="font-weight:600">📂 选择小说目录</span><span onclick="this.closest(\'#dir-browser-modal\').style.display=\'none\'" style="cursor:pointer;color:var(--text2);font-size:18px">✕</span>';
+    
+    const breadcrumb = document.createElement('div');
+    breadcrumb.id = 'dir-breadcrumb';
+    breadcrumb.style.cssText = 'padding:8px 20px;border-bottom:1px solid var(--border);font-size:12px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+    
+    const list = document.createElement('div');
+    list.id = 'dir-list';
+    list.style.cssText = 'flex:1;overflow-y:auto;padding:8px;min-height:200px';
+    
+    const footer = document.createElement('div');
+    footer.style.cssText = 'padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center';
+    footer.innerHTML = '<button class="btn btn-sm" onclick="document.getElementById(\'dir-browser-modal\').style.display=\'none\'">取消</button><button class="btn btn-sm btn-primary" onclick="selectCurrentDir()">✅ 选择当前目录</button>';
+    
+    box.appendChild(header);
+    box.appendChild(breadcrumb);
+    box.appendChild(list);
+    box.appendChild(footer);
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+    loadDir('');
+}
+
+function loadDir(path) {
+    const list = document.getElementById('dir-list');
+    const bread = document.getElementById('dir-breadcrumb');
+    if (!list) return;
+    list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text2)">⏳ 加载中...</div>';
+    
+    const url = path ? '/api/browse-directory?path=' + encodeURIComponent(path) : '/api/browse-directory';
+    fetch(url)
+    .then(r => r.json())
+    .then(data => {
+        if (!data.ok) { list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--red)">❌ ' + (data.error || '加载失败') + '</div>'; return; }
+        bread.innerHTML = '当前：<span style="color:var(--accent);font-weight:600" onclick="loadDir(\'\')">~</span>';
+        const parts = data.current.replace('/Users/', '').split('/');
+        let cum = '/Users';
+        parts.forEach(p => {
+            cum += '/' + p;
+            bread.innerHTML += ' / <span style="cursor:pointer;color:var(--accent)" onclick="loadDir(\'' + cum + '\')">' + p + '</span>';
+        });
+        bread.dataset.currentPath = data.current;
+        let html = '';
+        if (data.parent) {
+            html += '<div class="dir-item" onclick="loadDir(\'' + data.parent + '\')" style="padding:8px 12px;cursor:pointer;border-radius:4px;display:flex;align-items:center;gap:8px">📂 <span style="color:var(--text2)">.. (上级目录)</span></div>';
+        }
+        data.items.forEach(item => {
+            html += '<div class="dir-item" onclick="loadDir(\'' + item.path + '\')" style="padding:8px 12px;cursor:pointer;border-radius:4px;display:flex;align-items:center;gap:8px">📁 ' + item.name + '</div>';
+        });
+        if (!data.items.length) html += '<div style="text-align:center;padding:20px;color:var(--text2)">（空目录）</div>';
+        list.innerHTML = html;
+    })
+    .catch(e => { list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--red)">❌ ' + e.message + '</div>'; });
+}
+
+function selectCurrentDir() {
+    const bread = document.getElementById('dir-breadcrumb');
+    const input = document.getElementById('novels-path-input');
+    if (bread && bread.dataset.currentPath) {
+        input.value = bread.dataset.currentPath;
+    }
+    document.getElementById('dir-browser-modal').style.display = 'none';
+}
+</script>
+{% endblock %}
