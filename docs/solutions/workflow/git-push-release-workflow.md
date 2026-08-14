@@ -51,9 +51,11 @@ tags: [git, release, github, workflow]
 ```bash
 # 1. 改版本号 + 更新 README（英文+中文）
 # 2. 更新 GitHub About
-curl -X PATCH https://api.github.com/repos/zdx52/AIUsageMonitor \
-  -H "Authorization: token $GITHUB_TOKEN" \
-  -d '{"description": "...", "topics": ["..."]}'
+# ⚠️ 坑：PATCH /repos 的 body 里 topics 字段会被忽略！必须用专用端点：
+curl -X PUT https://api.github.com/repos/zdx52/AIUsageMonitor/topics \
+  -H "Authorization: token $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" \
+  -d '{"names": ["topic1", "topic2", ...]}'
+# description 用 PATCH /repos 更新（2026-08-14 实测：PUT /topics 一次性替换全部 topics）
 # 3. 推送
 git add -A && git commit -m "v1.5.3: ..." && git push
 # 4. Release（双语 body）
