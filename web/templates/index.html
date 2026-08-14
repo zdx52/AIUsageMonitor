@@ -10,10 +10,14 @@
     {% set tgt = novel.config.get('target_chapters', 200) %}
     {% set title = novel.config.get('title') or novel.name %}
     <a href="/novels/{{ novel.name }}" class="card novel-card" draggable="true" data-name="{{ novel.name }}">
-        <!-- 渐变封面 -->
+        <!-- 封面（真实封面图优先，无则渐变占位） -->
         <div class="novel-cover" data-seed="{{ title }}">
+            {% if novel.cover %}
+            <img src="/covers/{{ novel.name }}" alt="{{ title }}" style="width:100%;height:100%;object-fit:cover;border-radius:10px">
+            {% else %}
             <span class="cover-char">{{ title[0] }}</span>
             <span class="cover-sub">小 说</span>
+            {% endif %}
         </div>
 
         <div class="novel-body">
@@ -87,6 +91,7 @@
         return h;
     }
     document.querySelectorAll('.novel-cover').forEach(el => {
+        if (el.querySelector('img')) return; // 有真实封面，跳过渐变
         el.style.background = COVERS[hash(el.dataset.seed || '') % COVERS.length];
     });
 

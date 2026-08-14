@@ -598,6 +598,11 @@ blockquote {
     background: linear-gradient(160deg, rgba(255,255,255,0.22) 0%, transparent 40%, rgba(0,0,0,0.18) 100%);
     pointer-events: none;
 }
+.novel-cover img {
+    position: relative;
+    z-index: 1;
+    display: block;
+}
 .novel-cover .cover-char {
     font-size: 30px;
     font-weight: 800;

@@ -14,7 +14,7 @@ from pathlib import Path
 
 import markdown
 from dotenv import load_dotenv
-from flask import Flask, jsonify, redirect, render_template, request, url_for
+from flask import Flask, jsonify, redirect, render_template, request, send_file, url_for
 
 # ── Paths ──────────────────────────────────────────────
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -54,6 +54,26 @@ except Exception:
 app = Flask(__name__)
 
 # ── Novel Config (novel.json) ──────────────────────────
+
+# 封面文件优先级（novels/<slug>/封面/ 目录下）
+COVER_PRIORITY = [
+    "cover_v3_compressed.jpg", "cover_v3.png", "cover_base.png",
+    "cover.png", "cover.jpg", "封面.png", "封面.jpg",
+]
+
+
+def find_cover(project_path):
+    """查找小说封面文件，返回文件名或 None。"""
+    cover_dir = project_path / "封面"
+    if not cover_dir.exists():
+        return None
+    for name in COVER_PRIORITY:
+        p = cover_dir / name
+        if p.exists():
+            return name
+    for p in sorted(cover_dir.glob("*.jpg")) + sorted(cover_dir.glob("*.png")):
+        return p.name
+    return None
 
 DEFAULT_NOVEL_CONFIG = {
     "title": "",
@@ -135,6 +155,7 @@ def get_novels():
             "volumes": volumes,
             "chapters": chapters_total,
             "chars": chars_total,
+            "cover": find_cover(entry),
             "progress_pct": min(int(chapters_total / max(config.get("target_chapters", 200), 1) * 100), 100) if chapters_total > 0 else 0,
             "latest_chapter": "",
         }
@@ -193,6 +214,18 @@ def api_novels_reorder():
         return jsonify({"ok": True})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/covers/<slug>")
+def novel_cover(slug):
+    """Serve novel cover image from 封面/ directory."""
+    project_path = NOVELS_DIR / slug
+    if not project_path.exists():
+        return "", 404
+    name = find_cover(project_path)
+    if not name:
+        return "", 404
+    return send_file(project_path / "封面" / name)
 
 
 def parse_world(text):
@@ -862,6 +895,7 @@ def novel_overview(slug):
         latest_chapter=latest_chapter,
         eval_scores=eval_scores,
         q_summary=q_summary,
+        cover=find_cover(project_path),
         world_sections=world_sections,
         characters=characters,
         outline_chapters=outline_chapters,
