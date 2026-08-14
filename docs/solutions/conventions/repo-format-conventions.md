@@ -26,6 +26,7 @@ tags: [readme, github, conventions, naming]
 - **GitHub About**（description + topics）= 纯英文
 - **所有文件/目录名用英文**（README_CN.md 是唯一含中文的文件，文件名本身仍用英文）
 - 中文内容只出现在 README_CN.md 内部，不散落到其他文件
+- **Changelog 语言随文件走**：README.md 的更新日志必须用英文写，不能照搬 README_CN.md 的中文条目（2026-08-14 教训：v1.6.0 changelog 误用中文被用户纠正）。UI 按钮名/目录名等专名引用（如「小说」按钮、封面/ 目录）可保留原文
 
 ## Why This Matters
 
