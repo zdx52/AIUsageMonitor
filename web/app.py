@@ -724,6 +724,62 @@ def get_tracking_sections(project_path):
     return sections, found
 
 
+def parse_canon(text):
+    """Parse canon.md (正典数据库) into structured sections.
+
+    Format: `## section` headings, `### subsection` headings (e.g. 事件-第N章),
+    `- bullet` lists, `> notes`, plain paragraphs. canon.md has no tables.
+    Returns [{"title", "children": [{"subtitle", "lists", "notes", "paragraphs"}]}]
+    where a section without subsections keeps its content in its own
+    lists/notes/paragraphs (children empty).
+    """
+    sections = []
+    current = None
+    child = None
+
+    def bucket():
+        target = child if child is not None else current
+        assert target is not None, "bucket() called without active section"
+        return target
+
+    for raw in text.splitlines():
+        line = raw.strip()
+        if not line or line.startswith("# "):
+            continue
+        if line.startswith("## "):
+            current = {"title": line.lstrip("# ").strip(), "children": [],
+                       "lists": [], "notes": [], "paragraphs": []}
+            child = None
+            sections.append(current)
+        elif line.startswith("### "):
+            if current is None:
+                continue
+            child = {"subtitle": line.lstrip("# ").strip(), "lists": [], "notes": [], "paragraphs": []}
+            current["children"].append(child)
+        elif current is None:
+            continue
+        elif line.startswith("- "):
+            bucket()["lists"].append(line[2:].strip())
+        elif line.startswith("> "):
+            bucket()["notes"].append(line.lstrip("> ").strip())
+        elif line.strip():
+            bucket()["paragraphs"].append(line)
+    return sections
+
+
+def get_canon_sections(project_path):
+    """Load and parse canon.md (正典数据库) from root or sub-volumes."""
+    sections = []
+    found = False
+    for vol_name, content in _find_project_files(project_path, "canon.md"):
+        for s in parse_canon(content):
+            if vol_name:
+                s["title"] = f"{vol_name} · {s['title']}"
+            sections.append(s)
+        found = True
+    return sections, found
+
+
 def _find_project_files(project_path, filename):
     """Search for a file in project root and sub-volumes. Returns list of (volume_name, content).
 
@@ -1501,6 +1557,18 @@ def novel_tracking(slug):
 
     sections, has_tracking = get_tracking_sections(project_path)
     return render_template("tracking.html", slug=slug, sections=sections, has_tracking=has_tracking)
+
+
+# ── 正典数据库 ─────────────────────────────────────────
+
+@app.route("/novels/<slug>/canon")
+def novel_canon(slug):
+    project_path = NOVELS_DIR / slug
+    if not project_path.exists():
+        return "小说不存在", 404
+
+    sections, has_canon = get_canon_sections(project_path)
+    return render_template("canon.html", slug=slug, sections=sections, has_canon=has_canon)
 
 
 # ── 质量检测（复用 scripts/ 质检工具） ──────────────────

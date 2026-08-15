@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% block title %}正典 · {{ config.get('title') or slug }}{% endblock %}
+{% block content %}
+
+<style>
+    .canon-sec {
+        margin-bottom: 12px;
+        border-radius: 10px;
+        background: var(--bg2, rgba(44,44,46,0.8));
+        border: 1px solid var(--border, rgba(255,255,255,0.06));
+        overflow: hidden;
+    }
+    .canon-sec summary {
+        cursor: pointer;
+        padding: 12px 14px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text);
+        list-style: none;
+        user-select: none;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: background 0.12s;
+    }
+    .canon-sec summary::-webkit-details-marker { display: none; }
+    .canon-sec summary::before {
+        content: '▸';
+        color: var(--accent);
+        display: inline-block;
+        transition: transform 0.15s;
+        font-size: 12px;
+    }
+    .canon-sec[open] summary::before { transform: rotate(90deg); }
+    .canon-sec summary:hover { background: var(--bg3, rgba(255,255,255,0.05)); }
+    .canon-sec[open] summary { border-bottom: 1px solid var(--border, rgba(255,255,255,0.08)); }
+    .canon-sec .canon-body { padding: 12px 14px; }
+    .canon-sec .canon-count {
+        font-size: 11px;
+        font-weight: 400;
+        color: var(--text-2, rgba(255,255,255,0.5));
+        background: var(--bg3, rgba(255,255,255,0.06));
+        border-radius: 8px;
+        padding: 1px 8px;
+    }
+    .canon-sub {
+        margin-top: 12px;
+        padding-top: 10px;
+        border-top: 1px dashed var(--border, rgba(255,255,255,0.08));
+    }
+    .canon-sub h4 {
+        margin: 0 0 8px;
+        font-size: 13px;
+        color: var(--accent);
+    }
+    .canon-body ul {
+        margin: 8px 0 0 4px;
+        list-style: none;
+        font-size: 12px;
+        color: var(--text-2);
+        line-height: 1.9;
+    }
+    .canon-body ul li { padding: 2px 0; }
+    .canon-body p { margin: 4px 0; font-size: 12px; color: var(--text-2); line-height: 1.7; }
+    .canon-toolbar { margin-bottom: 12px; text-align: right; }
+</style>
+
+<h1 class="page-title">📖 正典数据库</h1>
+<p class="page-subtitle">canon.md · 动态事实写回库：地理 / 人物 / 事件（按章节）/ 物价 / 时间线 / 设定规则</p>
+
+{% if not has_canon %}
+<div class="card">
+    <p style="color:var(--text-2)">该项目还没有 <code>canon.md</code>，在 novels 目录创建即可自动展示。</p>
+</div>
+{% endif %}
+
+{% if sections %}
+<div class="canon-toolbar">
+    <button class="sf-btn" onclick="toggleAllCanon(true)" style="padding:3px 10px;font-size:11px">全部展开</button>
+    <button class="sf-btn" onclick="toggleAllCanon(false)" style="padding:3px 10px;font-size:11px">全部收起</button>
+</div>
+{% endif %}
+
+{% for sec in sections %}
+{% set sec_count = sec.lists|length + sec.children|length %}
+<details class="canon-sec">
+    <summary>
+        {{ sec.title }}
+        {% if sec_count %}<span class="canon-count">{{ sec_count }} 条</span>{% endif %}
+    </summary>
+    <div class="canon-body">
+
+        {% if sec.notes %}
+        <div style="margin-bottom:12px;font-size:12px;color:var(--text-2);line-height:1.7">
+            {% for n in sec.notes %}
+            <div>📌 {{ n }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if sec.paragraphs %}
+        <div style="margin-bottom:12px">
+            {% for p in sec.paragraphs %}<p>{{ p }}</p>{% endfor %}
+        </div>
+        {% endif %}
+
+        {% if sec.lists %}
+        <ul>
+            {% for item in sec.lists %}
+            <li>• {{ item }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+
+        {% for ch in sec.children %}
+        <div class="canon-sub">
+            <h4>{{ ch.subtitle }}</h4>
+
+            {% if ch.notes %}
+            <div style="margin-bottom:8px;font-size:12px;color:var(--text-2);line-height:1.7">
+                {% for n in ch.notes %}<div>📌 {{ n }}</div>{% endfor %}
+            </div>
+            {% endif %}
+
+            {% if ch.paragraphs %}
+            <div style="margin-bottom:8px">
+                {% for p in ch.paragraphs %}<p>{{ p }}</p>{% endfor %}
+            </div>
+            {% endif %}
+
+            {% if ch.lists %}
+            <ul>
+                {% for item in ch.lists %}
+                <li>• {{ item }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+        {% endfor %}
+
+    </div>
+</details>
+{% endfor %}
+
+<script>
+function toggleAllCanon(open) {
+    document.querySelectorAll('.canon-sec').forEach(function(d) {
+        d.open = open;
+    });
+}
+</script>
+
+{% endblock %}
