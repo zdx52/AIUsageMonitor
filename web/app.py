@@ -420,8 +420,8 @@ def extract_parent_volume_defs(project_path):
     Returns {vol_num: {"name": "卷1《杀穿红星厂》", "range": (1, 40)}, ...}
     """
     defs = {}
-    for fp in get_outline_files(project_path):
-        for line in fp.read_text(encoding="utf-8").splitlines():
+    for name, text in get_outline_sources(project_path):
+        for line in text.splitlines():
             if not line.startswith("# "):
                 continue
             # Explicit: 卷N《名》= 第A-B章
@@ -484,8 +484,8 @@ def parse_all_outlines(project_path):
     """
     volumes, all_chapters = [], []
     seen_vols = {}
-    for fp in get_outline_files(project_path):
-        vols, chs = parse_outline(fp.read_text(encoding="utf-8"))
+    for name, text in get_outline_sources(project_path):
+        vols, chs = parse_outline(text)
         all_chapters.extend(chs)
         for vol in vols:
             # Merge key: chapter range if present, else display name.
@@ -665,14 +665,30 @@ def parse_markdown_tables(text):
 
 
 def get_tracking_sections(project_path):
-    """Load and parse 连载追踪.md from root or sub-volumes."""
+    """Load and parse 连载追踪.md from root or sub-volumes.
+
+    New-style fallback: 追踪/ 目录下的多个文件（伏笔.md/角色状态.md/上下文.md）
+    合并为多个 section，标题带文件名前缀区分。
+    """
+    sections = []
+    found = False
     for vol_name, content in _find_project_files(project_path, "连载追踪.md"):
-        return parse_markdown_tables(content), True
-    return [], False
+        parsed = parse_markdown_tables(content)
+        for s in parsed:
+            if vol_name:
+                s["title"] = f"{vol_name} · {s['title']}"
+            sections.append(s)
+        found = True
+    return sections, found
 
 
 def _find_project_files(project_path, filename):
-    """Search for a file in project root and sub-volumes. Returns list of (volume_name, content)."""
+    """Search for a file in project root and sub-volumes. Returns list of (volume_name, content).
+
+    Falls back to novel-bootstrapping new-style structure (设定/世界观, 追踪 dirs):
+      world.md      → 设定/世界观/*.md
+      连载追踪.md    → 追踪/*.md
+    """
     results = []
     fp = project_path / filename
     if fp.exists():
@@ -682,7 +698,112 @@ def _find_project_files(project_path, filename):
             fp = sub / filename
             if fp.exists():
                 results.append((sub.name, fp.read_text()))
+    if results:
+        return results
+    # New-style fallback
+    mapping = {
+        "world.md": ("设定", "世界观"),
+        "连载追踪.md": ("追踪", None),
+    }
+    if filename in mapping:
+        subdir, subsub = mapping[filename]
+        base = project_path / subdir
+        if subsub:
+            base = base / subsub
+        if base.exists():
+            for f in sorted(base.glob("*.md")):
+                results.append((f.stem, f.read_text(encoding="utf-8")))
     return results
+
+
+def parse_new_style_characters(project_path):
+    """Parse new-style character cards: 设定/角色/*.md (each file = one character).
+
+    File format: `# 主角人物卡：姜绣` heading, then ## 基本信息 etc.
+    Returns list of {"name", "role", "heading", "text"} compatible with parse_characters.
+    """
+    d = project_path / "设定" / "角色"
+    if not d.exists():
+        return []
+    characters = []
+    for f in sorted(d.glob("*.md")):
+        text = f.read_text(encoding="utf-8")
+        heading = ""
+        name, role = f.stem, "配角"
+        for line in text.split("\n"):
+            if line.startswith("# "):
+                heading = line.lstrip("# ").strip()
+                break
+        if "主角" in heading:
+            role = "主角"
+            for sep in ["：", ":"]:
+                if sep in heading:
+                    cand = heading.split(sep, 1)[1].strip()
+                    if cand:
+                        name = cand
+                    break
+        characters.append({"name": name, "role": role, "heading": heading, "text": text})
+    return characters
+
+
+def get_new_style_seed(project_path):
+    """Extract one-line pitch from new-style scaffolding as seed fallback.
+
+    Sources: 大纲/大纲.md `## 一句话总纲`, then 设定/题材定位.md `## 一句话卖点`.
+    """
+    for fname, key in [("大纲/大纲.md", "一句话总纲"), ("设定/题材定位.md", "一句话卖点")]:
+        p = project_path / fname
+        if p.exists():
+            text = p.read_text(encoding="utf-8")
+            m = re.search(rf"##\s*{key}\s*\n\s*(.+)", text)
+            if m:
+                return m.group(1).strip()
+    return ""
+
+
+def get_outline_sources(project_path):
+    """Return [(name, text)] for outline files.
+
+    Legacy: outline.md + outline_ch*.md (unchanged).
+    Fallback to new-style 大纲/ dir (大纲.md + 卷纲_*.md + 细纲_*.md), synthesized
+    into legacy outline.md format so parse_outline() can consume it:
+      `### 卷一《锈针》（第1-40章）` → `## 第一卷《锈针》（第1-40章）`
+      `# 第N章：标题` → `#### 第N章：标题`
+    """
+    files = get_outline_files(project_path)
+    if files:
+        return [(f.name, f.read_text(encoding="utf-8")) for f in files]
+    d = project_path / "大纲"
+    if not d.exists():
+        return []
+    parts = []
+    main = d / "大纲.md"
+    if main.exists():
+        lines = main.read_text(encoding="utf-8").split("\n")
+        for i, line in enumerate(lines):
+            m = re.match(r"^#{2,3}\s*卷([一二三四五六七八九十]+)《([^》]+)》[（(]第(\d+)-(\d+)章[）)]", line)
+            if m:
+                lines[i] = f"## 第{m.group(1)}卷《{m.group(2)}》（第{m.group(3)}-{m.group(4)}章）"
+        parts.append("\n".join(lines))
+    for vf in sorted(d.glob("卷纲_*.md")):
+        text = vf.read_text(encoding="utf-8")
+        lines = text.split("\n")
+        for i, line in enumerate(lines):
+            m = re.match(r"^##\s*([^#\n]+)$", line)
+            if m:
+                key = m.group(1).strip()
+                if i + 1 < len(lines) and lines[i + 1].strip() and not lines[i + 1].startswith("#"):
+                    lines[i] = f"**{key}**：{lines[i + 1].strip()}"
+        parts.append("\n".join(lines))
+    for cf in sorted(d.glob("细纲_*.md")):
+        lines = cf.read_text(encoding="utf-8").split("\n")
+        for i, line in enumerate(lines):
+            m = re.match(r"^#\s*第(\d+)章[：:]\s*(.*)", line)
+            if m:
+                lines[i] = f"#### 第{m.group(1)}章：{m.group(2)}"
+                break
+        parts.append("\n".join(lines))
+    return [("大纲(新结构)", "\n\n".join(parts))]
 
 
 def get_chapter_stats(project_path):
@@ -716,7 +837,11 @@ def get_chapter_stats(project_path):
 
 
 def get_volume_info(project_path):
-    """Get sub-volume info."""
+    """Get sub-volume info.
+
+    Legacy: 扫描「卷」子目录。New-style fallback: 从大纲（outline / 大纲/ 目录）
+    解析卷名和章节范围，卷状态按章节进度估算。
+    """
     volumes = []
     for sub in sorted(project_path.iterdir()):
         if sub.is_dir() and "卷" in sub.name:
@@ -731,6 +856,40 @@ def get_volume_info(project_path):
                 "chars": chars_total,
                 "status": config.get("status", "构思中"),
             })
+    if not volumes:
+        # New-style: derive from outline volumes (大纲/目录 or outline.md)
+        try:
+            def _ch_num(name):
+                m = re.search(r"(\d+)", name or "")
+                return int(m.group(1)) if m else None
+
+            outline_vols, _ = parse_all_outlines(project_path)
+            chapters = get_chapter_stats(project_path)
+            written = {_ch_num(c["name"]) for c in chapters}
+            written.discard(None)
+            for v in outline_vols:
+                if v.get("is_parent"):
+                    sub_total = sum(len(sub.get("chapters", [])) for sub in v.get("subvolumes", []))
+                    sub_written = sum(1 for sub in v.get("subvolumes", []) for c in sub.get("chapters", []) if c["num"] in written)
+                    total, cnt = sub_total, sub_written
+                else:
+                    total = v["range"][1] - v["range"][0] + 1 if v.get("range") else len(v.get("chapters", []))
+                    cnt = sum(1 for c in v.get("chapters", []) if c["num"] in written)
+                if total <= 0:
+                    continue
+                pct = cnt / total
+                status = "已完成" if pct >= 1.0 else ("起草中" if pct > 0 else "构思中")
+                name = re.sub(r"[（(].*[）)]", "", v["name"]).strip()
+                vol_nums = {cc["num"] for cc in v.get("chapters", [])}
+                volumes.append({
+                    "name": name,
+                    "title": "",
+                    "chapters": cnt,
+                    "chars": sum(c.get("chars", 0) for c in chapters if _ch_num(c["name"]) in vol_nums),
+                    "status": status,
+                })
+        except Exception:
+            pass
     return volumes
 
 
@@ -794,35 +953,32 @@ def novel_overview(slug):
     # Parse content files
     world_text = ""
     world_sections = {}
-    if (project_path / "world.md").exists():
-        world_text = (project_path / "world.md").read_text()
-        world_sections = parse_world(world_text)
+    for vol_name, wtext in _find_project_files(project_path, "world.md"):
+        world_text = wtext
+        world_sections.update(parse_world(wtext))
 
     characters = []
-    if (project_path / "characters.md").exists():
-        characters = parse_characters((project_path / "characters.md").read_text())
+    for vol_name, ctext in _find_project_files(project_path, "characters.md"):
+        characters.extend(parse_characters(ctext))
+    if not characters:
+        characters = parse_new_style_characters(project_path)
 
     outline_chapters, outline_acts = [], []
-    outline_paths = get_outline_files(project_path)
-    for op in outline_paths:
-        if op.exists():
-            ch, ac = parse_outline(op.read_text())
-            outline_chapters.extend(ch)
-            outline_acts.extend(ac)
+    for name, otext in get_outline_sources(project_path):
+        ch, ac = parse_outline(otext)
+        outline_chapters.extend(ch)
+        outline_acts.extend(ac)
 
     voice_sections = {}
-    if (project_path / "voice.md").exists():
-        voice_sections = parse_voice((project_path / "voice.md").read_text())
+    for vol_name, vtext in _find_project_files(project_path, "voice.md"):
+        voice_sections.update(parse_voice(vtext))
     # Parse content files
     seed = ""
-    seed_paths = [project_path / "seed.txt"]
-    for sub in sorted(project_path.iterdir()):
-        if sub.is_dir() and "卷" in sub.name:
-            seed_paths.append(sub / "seed.txt")
-    for sp in seed_paths:
-        if sp.exists():
-            seed = sp.read_text()
-            break
+    for vol_name, stext in _find_project_files(project_path, "seed.txt"):
+        seed = stext
+        break
+    if not seed:
+        seed = get_new_style_seed(project_path)
 
     # Progress info
     target = config.get("target_chapters", 200)
@@ -953,6 +1109,13 @@ def novel_settings(slug):
                 detected_title = title
                 break
     if not detected_title:
+        # New-style: 大纲/大纲.md 第一行 `# 《八零绣娘：一针下去，全村跪了》全书大纲`
+        p = project_path / "大纲" / "大纲.md"
+        if p.exists():
+            first = p.read_text(encoding="utf-8").strip().split("\n")[0].lstrip("# ").strip()
+            if "《" in first:
+                detected_title = first.split("《", 1)[1].split("》")[0].strip()
+    if not detected_title:
         for fp in _find_project_files(project_path, "voice.md"):
             first_line = fp[1].strip().split("\n")[0]
             title = first_line.lstrip("# ").strip()
@@ -969,24 +1132,33 @@ def novel_settings(slug):
     # Auto-detect genre from voice/world/outline
     detected_genre = ""
     detected_tone = ""
+    detect_texts = []
     for fname in ["voice.md", "world.md", "outline.md"]:
-        for fp in _find_project_files(project_path, fname):
-            text = fp[1].lower()
-            # Genre hints
-            for kw, g in [("修真", "玄幻修真"), ("修仙", "玄幻修真"), ("重生", "重生"), ("穿越", "穿越"),
-                          ("悬疑", "悬疑"), ("推理", "悬疑"), ("凶兽", "玄幻修真"), ("饕餮", "玄幻修真"),
-                          ("宗门", "玄幻修真"), ("妖怪", "怪谈"), ("都市", "都市"), ("校园", "青春"),
-                          ("末世", "末世"), ("星际", "科幻"), ("游戏", "游戏竞技")]:
-                if kw in text:
-                    detected_genre = g
-            # Tone hints
-            for kw, t in [("冷峻", "冷峻"), ("悬疑", "悬疑"), ("幽默", "幽默"), ("温暖", "温暖"),
-                          ("黑暗", "黑暗"), ("轻松", "轻松"), ("热血", "热血"), ("甜宠", "甜宠"),
-                          ("打脸", "爽文"), ("爽文", "爽文"), ("搞笑", "幽默")]:
-                if kw in text:
-                    detected_tone = t
-            if detected_genre and detected_tone:
-                break
+        for _v, text in _find_project_files(project_path, fname):
+            detect_texts.append(text)
+    if not detect_texts:
+        # New-style: 设定/题材定位.md 含 年代重生/非遗/爽点 等关键词
+        for sub in ["设定/题材定位.md", "设定/世界观/背景设定.md", "追踪/上下文.md"]:
+            p = project_path / sub
+            if p.exists():
+                detect_texts.append(p.read_text(encoding="utf-8"))
+    for text in detect_texts:
+        text = text.lower()
+        # Genre hints
+        for kw, g in [("修真", "玄幻修真"), ("修仙", "玄幻修真"), ("重生", "重生"), ("穿越", "穿越"),
+                      ("悬疑", "悬疑"), ("推理", "悬疑"), ("凶兽", "玄幻修真"), ("饕餮", "玄幻修真"),
+                      ("宗门", "玄幻修真"), ("妖怪", "怪谈"), ("都市", "都市"), ("校园", "青春"),
+                      ("末世", "末世"), ("星际", "科幻"), ("游戏", "游戏竞技")]:
+            if kw in text:
+                detected_genre = g
+        # Tone hints
+        for kw, t in [("冷峻", "冷峻"), ("悬疑", "悬疑"), ("幽默", "幽默"), ("温暖", "温暖"),
+                      ("黑暗", "黑暗"), ("轻松", "轻松"), ("热血", "热血"), ("甜宠", "甜宠"),
+                      ("打脸", "爽文"), ("爽文", "爽文"), ("搞笑", "幽默")]:
+            if kw in text:
+                detected_tone = t
+        if detected_genre and detected_tone:
+            break
 
     # Auto-detect status
     target = config.get("target_chapters", 200)
@@ -1036,6 +1208,8 @@ def novel_characters(slug):
             if vol_name:
                 ch["name"] = f"{ch['name']}"
         characters.extend(vol_chars)
+    if not characters:
+        characters = parse_new_style_characters(project_path)
 
     # Group by role with global index
     all_chars = characters
@@ -1054,6 +1228,8 @@ def novel_character_detail(slug, ch_index):
     characters = []
     for vol_name, text in _find_project_files(project_path, "characters.md"):
         characters.extend(parse_characters(text))
+    if not characters:
+        characters = parse_new_style_characters(project_path)
 
     if ch_index < 0 or ch_index >= len(characters):
         return "人物不存在", 404
