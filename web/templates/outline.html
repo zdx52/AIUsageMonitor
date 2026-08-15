@@ -4,6 +4,57 @@
 <h1 class="page-title">📋 故事架构</h1>
 <p class="page-subtitle">{{ slug }}</p>
 
+{% if summaries %}
+<div style="margin-bottom:16px">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span style="font-size:13px;font-weight:600;color:var(--text)">📋 全书纲要</span>
+        <span style="font-size:11px;color:var(--text-2)">一句话总纲 / 男主线 / 暗线 / 卷调性（大纲中非卷章节自动收录）</span>
+    </div>
+    {% for sec in summaries %}
+    <details class="card" style="margin-bottom:8px;padding:0" {% if loop.first %}open{% endif %}>
+        <summary style="cursor:pointer;font-size:13px;font-weight:600;color:var(--text);padding:10px 14px;user-select:none">{{ sec.title }}</summary>
+        <div style="padding:0 14px 12px">
+            {% if sec.notes %}
+            <div style="margin-bottom:10px;font-size:12px;color:var(--text-2);line-height:1.7">
+                {% for n in sec.notes %}<div>📌 {{ n }}</div>{% endfor %}
+            </div>
+            {% endif %}
+            {% for t in sec.tables %}
+            {% if t.subtitle %}<h4 style="margin:10px 0 6px;font-size:12px;color:var(--accent)">{{ t.subtitle }}</h4>{% endif %}
+            <div class="table-wrap" style="margin-bottom:8px;overflow-x:auto">
+                <table style="width:100%;font-size:12px">
+                    <thead>
+                        <tr>
+                            {% for h in t.headers %}
+                            <th style="text-align:left;white-space:nowrap">{{ h }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in t.rows %}
+                        <tr>
+                            {% for cell in row %}
+                            <td style="vertical-align:top">{{ cell }}</td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endfor %}
+            {% if sec.lists %}
+            <ul style="margin:8px 0 0 4px;list-style:none;font-size:12px;color:var(--text-2);line-height:1.9">
+                {% for item in sec.lists %}
+                <li style="padding:2px 0">• {{ item }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+    </details>
+    {% endfor %}
+</div>
+{% endif %}
+
 {% if volumes %}
 <div class="vol-list">
     {% for vol in volumes %}

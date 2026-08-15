@@ -780,6 +780,45 @@ def get_canon_sections(project_path):
     return sections, found
 
 
+# 卷/章范围标题（故事架构页已作为卷卡片展示，从纲要中排除）
+# 覆盖：第X卷 / 卷N / 第X-Y章 / 纯数字范围如 41-60（旧格式卷标题）
+VOL_TITLE_RE = re.compile(r'^(?:第[一二三四五六七八九十百]+卷|卷\s*\d+|第\d+\s*[-–—~至]\s*\d+\s*章|\d+\s*[-–—~至]\s*\d+)')
+
+
+def parse_outline_summary(text):
+    """Extract book-wide (non-volume) ## sections from an outline file.
+
+    Keeps 一句话总纲/全书结构/男主线/暗线总表/每卷结尾调性 and any future
+    non-volume section; drops volume/chapter-range headings already shown
+    as volume cards. Reuses parse_markdown_tables (tables/lists/notes).
+    """
+    parsed = parse_markdown_tables(text)
+    return [s for s in parsed if not VOL_TITLE_RE.match(s["title"])]
+
+
+def get_outline_summaries(project_path):
+    """Collect book-wide outline sections across all outline sources, deduped by title.
+
+    Also reads new-style 大纲/大纲.md directly: when the book root has a legacy
+    outline.md, get_outline_sources() returns it and never falls back to the
+    大纲/ dir, so 一句话总纲/男主线/暗线/调性 living only in 大纲/大纲.md
+    would be missed.
+    """
+    summaries = []
+    seen = set()
+    sources = list(get_outline_sources(project_path))
+    new_style = project_path / "大纲" / "大纲.md"
+    if new_style.exists():
+        sources.append(("大纲/大纲.md", new_style.read_text(encoding="utf-8")))
+    for _vol, text in sources:
+        for s in parse_outline_summary(text):
+            if s["title"] in seen:
+                continue
+            seen.add(s["title"])
+            summaries.append(s)
+    return summaries
+
+
 def _find_project_files(project_path, filename):
     """Search for a file in project root and sub-volumes. Returns list of (volume_name, content).
 
@@ -1401,11 +1440,14 @@ def novel_outline(slug):
                         c["title"] = ch2["title"]
                         break
 
+    summaries = get_outline_summaries(project_path)
+
     return render_template(
         "outline.html",
         slug=slug,
         volumes=volumes,
         chapters=chapters,
+        summaries=summaries,
     )
 
 
