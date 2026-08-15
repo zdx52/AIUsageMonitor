@@ -46,6 +46,7 @@ class DashboardWindowController: NSWindowController, NSWindowDelegate, WKNavigat
         window.makeKeyAndOrderFront(nil)
         
         loadDashboard()
+        NotificationCenter.default.post(name: .windowVisibilityChanged, object: nil)
     }
     
     private func loadDashboard() {

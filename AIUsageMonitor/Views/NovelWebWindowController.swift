@@ -43,8 +43,9 @@ class NovelWebWindowController: NSWindowController, NSWindowDelegate, WKNavigati
 
         NSApp.activate(ignoringOtherApps: true)
         window.makeKeyAndOrderFront(nil)
-
+        
         loadWeb()
+        NotificationCenter.default.post(name: .windowVisibilityChanged, object: nil)
     }
 
     private func loadWeb() {
@@ -70,7 +71,7 @@ class NovelWebWindowController: NSWindowController, NSWindowDelegate, WKNavigati
     }
 
     // MARK: - NSWindowDelegate
-
+    
     func windowWillClose(_ notification: Notification) {
         webView?.loadHTMLString("", baseURL: nil)
         webView = nil

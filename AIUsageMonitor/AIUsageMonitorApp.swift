@@ -113,6 +113,24 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             object: nil
         )
         
+        // 监听看板/小说窗口可见性变化，刷新 Dock 图标（窗口开 → 显示，全关 → 消失）
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleWindowVisibilityChanged),
+            name: .windowVisibilityChanged,
+            object: nil
+        )
+        // 窗口真正关闭后也会触发（willClose 通知发出时 isVisible 已为 false）
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleWindowVisibilityChanged),
+            name: NSWindow.willCloseNotification,
+            object: nil
+        )
+        
+        // .regular 激活策略下的最小菜单栏（App 菜单 + 窗口菜单，窗口菜单自动列窗口便于来回切换）
+        setupMainMenu()
+        
         Task {
             await dataStore.refreshAll()
         }
@@ -159,6 +177,55 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     @objc func closePopover() {
         popover?.close()
+    }
+    
+    /// 窗口可见性变化（延迟一帧，等窗口真正关闭后再判断）
+    @objc func handleWindowVisibilityChanged() {
+        DispatchQueue.main.async { [weak self] in
+            self?.updateDockPresence()
+        }
+    }
+    
+    /// 看板/小说窗口任一可见 → Dock 显示图标（.regular）；全部关闭 → 图标消失（.accessory）
+    func updateDockPresence() {
+        let dashboardVisible = DashboardWindowController.shared.window?.isVisible ?? false
+        let novelVisible = NovelWebWindowController.shared.window?.isVisible ?? false
+        let target: NSApplication.ActivationPolicy = (dashboardVisible || novelVisible) ? .regular : .accessory
+        if NSApp.activationPolicy() != target {
+            NSApp.setActivationPolicy(target)
+            print("🖥️ Dock 呈现切换: \(target == .regular ? "显示图标" : "隐藏图标")")
+        }
+    }
+    
+    /// 关闭最后一个窗口不退出应用（菜单栏监控常驻）
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        false
+    }
+    
+    /// 设置 .regular 状态下的最小菜单栏（App 菜单 + 窗口菜单）
+    private func setupMainMenu() {
+        let mainMenu = NSMenu()
+        
+        let appItem = NSMenuItem()
+        mainMenu.addItem(appItem)
+        let appMenu = NSMenu()
+        appMenu.addItem(withTitle: "关于 AIUsageMonitor", action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
+        appMenu.addItem(.separator())
+        appMenu.addItem(withTitle: "退出 AIUsageMonitor", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        appItem.submenu = appMenu
+        
+        let windowItem = NSMenuItem()
+        mainMenu.addItem(windowItem)
+        let windowMenu = NSMenu(title: "窗口")
+        windowMenu.addItem(withTitle: "最小化", action: #selector(NSWindow.performMiniaturize(_:)), keyEquivalent: "m")
+        windowMenu.addItem(withTitle: "缩放", action: #selector(NSWindow.performZoom(_:)), keyEquivalent: "")
+        windowMenu.addItem(.separator())
+        windowMenu.addItem(withTitle: "前置全部窗口", action: #selector(NSApplication.arrangeInFront(_:)), keyEquivalent: "")
+        windowItem.submenu = windowMenu
+        // AppKit 自动把打开的窗口列进窗口菜单，方便在看板/小说间切换
+        NSApp.windowsMenu = windowMenu
+        
+        NSApp.mainMenu = mainMenu
     }
     
     func setupRefreshTimer() {
@@ -223,4 +290,5 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
 extension Notification.Name {
     static let closePopoverForPanel = Notification.Name("closePopoverForPanel")
+    static let windowVisibilityChanged = Notification.Name("windowVisibilityChanged")
 }
