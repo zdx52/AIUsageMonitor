@@ -253,11 +253,22 @@ def parse_world(text):
 
 
 def parse_characters(text):
-    """Parse characters.md into a list of character dicts."""
+    """Parse characters.md into a list of character dicts.
+
+    Supports two formats:
+    - Legacy: `## 女主：林小满` (each ## heading = one character)
+    - Grouped (new-style books): `## 主角（核心人物）` + `### 姜绣`
+      (## = role group, ### = one character card; groups without any
+      ### child like 角色说话方式速查 are skipped)
+    """
+    lines = text.split("\n")
+    if any(line.startswith("### ") for line in lines):
+        return _parse_grouped_characters(lines)
+
     characters = []
     current = None
     current_lines = []
-    for line in text.split("\n"):
+    for line in lines:
         if line.startswith("## "):
             if current:
                 current["text"] = "\n".join(current_lines).strip()
@@ -280,10 +291,41 @@ def parse_characters(text):
                 for sep in [":", "："]:
                     if sep in line:
                         val = line.split(sep, 1)[1].strip().lower()
-                        if "main" in val or "主" in val or "lead" in val:
+                        # 精确判断主角，避免 "主要配角"/"主角团" 等含 "主" 的值误判
+                        if "main" in val or "lead" in val or ("主角" in val and "配角" not in val):
                             current["role"] = "主角"
                         current["role_from_content"] = True
                         break
+    if current:
+        current["text"] = "\n".join(current_lines).strip()
+        characters.append(current)
+    return characters
+
+
+def _parse_grouped_characters(lines):
+    """Parse grouped format: `## 主角（核心人物）` group + `### 姜绣` character cards."""
+    characters = []
+    current = None
+    current_lines = []
+    group_role = "配角"
+    for line in lines:
+        if line.startswith("## "):
+            if current:
+                current["text"] = "\n".join(current_lines).strip()
+                characters.append(current)
+            heading = line.lstrip("# ").strip()
+            group_role = "主角" if "主角" in heading and "配角" not in heading else "配角"
+            current = None
+            current_lines = []
+        elif line.startswith("### "):
+            if current:
+                current["text"] = "\n".join(current_lines).strip()
+                characters.append(current)
+            name = line.lstrip("# ").strip()
+            current = {"name": name, "role": group_role, "heading": name, "text": ""}
+            current_lines = []
+        elif current:
+            current_lines.append(line)
     if current:
         current["text"] = "\n".join(current_lines).strip()
         characters.append(current)
