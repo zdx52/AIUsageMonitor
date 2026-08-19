@@ -51,6 +51,7 @@ class DataStore: ObservableObject {
     @Published var menuBarTitle: String = "⏳ 加载中..."
     @Published var deepSeekBalance: DeepSeekUsage?
     @Published var tavilyUsage: TavilyUsage?
+    @Published var miniMaxUsage: MiniMaxUsage?
     @Published var openCodeUsage: OpenCodeUsage?
     @Published var openCodeNeedsLogin: Bool = false
     @Published var openCodeStatus: OpenCodeStatus = .notConfigured
@@ -76,6 +77,7 @@ class DataStore: ObservableObject {
         async let dsUsage = fetchDeepSeekUsage()
         async let tvUsage = fetchTavilyUsage()
         async let ocUsage = fetchOpenCodeUsage()
+        async let mxUsage = MiniMaxService.fetchTokenPlan()
         
         let ds = await dsBalance
         print("📊 refreshAll: DeepSeek balance = \(ds?.totalBalance != nil ? String(ds!.totalBalance) : "nil")")
@@ -83,6 +85,7 @@ class DataStore: ObservableObject {
         let tavilyData = await tvUsage
         print("📊 refreshAll: Tavily data = \(tavilyData != nil ? "\(tavilyData!.plan) used:\(tavilyData!.creditsUsed)/\(tavilyData!.monthlyLimit)" : "nil")")
         let openCodeData = await ocUsage
+        let miniMaxData = await mxUsage
         
         // 合并 DeepSeek 余额和今日消耗
         if var balance = ds {
@@ -132,6 +135,9 @@ class DataStore: ObservableObject {
                 self.openCodeUsage = OpenCodeUsage(status: .fetchFailed)
             }
         }
+
+        // MiniMax Token Plan
+        self.miniMaxUsage = miniMaxData
         
         self.lastRefreshTime = Date()
         let interval = UserDefaults.standard.object(forKey: "refreshInterval") as? Double ?? 300
@@ -205,6 +211,15 @@ class DataStore: ObservableObject {
            Double(tv.remaining) / Double(tv.monthlyLimit) < 0.25 {
             healthLevel = .warning
             return
+        }
+        if let mx = miniMaxUsage, mx.hasSubscriptionData {
+            // 任一模型 5h 或周窗口剩余 < 25% 都算告警
+            let minInterval = mx.models.compactMap { $0.intervalRemainingPercent }.min() ?? 100
+            let minWeekly = mx.models.compactMap { $0.weeklyRemainingPercent }.min() ?? 100
+            if minInterval < 25 || minWeekly < 25 {
+                healthLevel = .warning
+                return
+            }
         }
         if let oc = openCodeUsage, let pct = oc.rpcUsagePercent, pct > 80 {
             healthLevel = .warning

@@ -6,15 +6,19 @@ struct SettingsView: View {
     
     @State private var deepSeekKey: String = ""
     @State private var tavilyKey: String = ""
+    @State private var miniMaxSubscriptionKey: String = ""
     @State private var refreshInterval: Double = 300
     @State private var showDeepSeekKey: Bool = false
     @State private var showTavilyKey: Bool = false
+    @State private var showMiniMaxKey: Bool = false
     @State private var openCodeURL: String = ""
     @State private var saveMessage: String = ""
     @State private var showMessage: Bool = false
     @State private var loginMessage: String = ""
     @State private var showDeepSeek: Bool = true
     @State private var showTavily: Bool = true
+    @State private var showMiniMax: Bool = true
+    @State private var showMiniMaxVideo: Bool = false
     @State private var showOpenCode: Bool = true
     @State private var showHindsight: Bool = true
     
@@ -54,6 +58,7 @@ struct SettingsView: View {
                             .foregroundColor(.secondary)
                         Toggle("DeepSeek 余额", isOn: $showDeepSeek)
                         Toggle("Tavily 用量", isOn: $showTavily)
+                        Toggle("MiniMax Token Plan", isOn: $showMiniMax)
                         Toggle("OpenCode GO 用量", isOn: $showOpenCode)
                         Toggle("Hindsight 记忆", isOn: $showHindsight)
                     }
@@ -114,6 +119,43 @@ struct SettingsView: View {
                     .padding(.vertical, 4)
                 }
                 
+                // OpenRouter 已删除（v1.7.0：菜单栏不再显示 OpenRouter 卡片）
+
+                // MiniMax Token Plan 设置
+                GroupBox("✨ MiniMax (中国)") {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("订阅 Key（用于查询 Token Plan 用量，非按量付费 API Key）")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+
+                        HStack {
+                            if showMiniMaxKey {
+                                TextField("eyJ...", text: $miniMaxSubscriptionKey)
+                            } else {
+                                SecureField("eyJ...", text: $miniMaxSubscriptionKey)
+                            }
+
+                            Button(action: { showMiniMaxKey.toggle() }) {
+                                Image(systemName: showMiniMaxKey ? "eye.slash" : "eye")
+                            }
+                        }
+
+                        Text("获取方式: platform.minimaxi.com → 订阅付费 → Token Plan → 查看订阅 Key（JWT 格式，以 eyJ 开头）")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+
+                        Text("⚠️ 仅支持订阅 Key；按量计费 API Key 不互通（官方明确不可混用）")
+                            .font(.caption2)
+                            .foregroundColor(.orange)
+
+                        Divider()
+
+                        Toggle("显示 video 模型用量", isOn: $showMiniMaxVideo)
+                            .help("video 模型（独立计费）默认隐藏，勾选后在菜单栏 MiniMax 卡片中显示")
+                    }
+                    .padding(.vertical, 4)
+                }
+
                 // OpenCode 设置
                 GroupBox("🔄 OpenCode GO") {
                     VStack(alignment: .leading, spacing: 10) {
@@ -200,25 +242,31 @@ struct SettingsView: View {
     private func loadSettings() {
         deepSeekKey = KeychainHelper.get(key: "deepseek_api_key") ?? ""
         tavilyKey = KeychainHelper.get(key: "tavily_api_key") ?? ""
+        miniMaxSubscriptionKey = KeychainHelper.get(key: "minimax_subscription_key") ?? ""
         openCodeURL = UserDefaults.standard.string(forKey: "openCodeWorkspaceURL") ?? ""
-        
+
         if let interval = UserDefaults.standard.object(forKey: "refreshInterval") as? Double {
             refreshInterval = interval
         }
-        
+
         showDeepSeek = UserDefaults.standard.object(forKey: "showDeepSeek") as? Bool ?? true
         showTavily = UserDefaults.standard.object(forKey: "showTavily") as? Bool ?? true
+        showMiniMax = UserDefaults.standard.object(forKey: "showMiniMax") as? Bool ?? true
+        showMiniMaxVideo = UserDefaults.standard.object(forKey: "showMiniMaxVideo") as? Bool ?? false
         showOpenCode = UserDefaults.standard.object(forKey: "showOpenCode") as? Bool ?? true
         showHindsight = UserDefaults.standard.object(forKey: "showHindsight") as? Bool ?? true
     }
-    
+
     private func saveSettings() {
         KeychainHelper.save(key: "deepseek_api_key", value: deepSeekKey)
         KeychainHelper.save(key: "tavily_api_key", value: tavilyKey)
+        KeychainHelper.save(key: "minimax_subscription_key", value: miniMaxSubscriptionKey)
         UserDefaults.standard.set(openCodeURL, forKey: "openCodeWorkspaceURL")
         UserDefaults.standard.set(refreshInterval, forKey: "refreshInterval")
         UserDefaults.standard.set(showDeepSeek, forKey: "showDeepSeek")
         UserDefaults.standard.set(showTavily, forKey: "showTavily")
+        UserDefaults.standard.set(showMiniMax, forKey: "showMiniMax")
+        UserDefaults.standard.set(showMiniMaxVideo, forKey: "showMiniMaxVideo")
         UserDefaults.standard.set(showOpenCode, forKey: "showOpenCode")
         UserDefaults.standard.set(showHindsight, forKey: "showHindsight")
         
