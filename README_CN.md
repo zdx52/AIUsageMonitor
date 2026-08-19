@@ -13,10 +13,10 @@
   <img alt="License" src="https://img.shields.io/github/license/zdx52/AIUsageMonitor">
   <img alt="Swift" src="https://img.shields.io/badge/swift-5.0-orange">
   <img alt="macOS" src="https://img.shields.io/badge/platform-macOS-lightgray">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.6.0-blue">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.7.0-blue">
 </p>
 
-AIUsageMonitor 是一个 macOS 菜单栏轻量级系统监控工具，实时显示笔记本温度、CPU 使用率、AI 用量（DeepSeek / Tavily / OpenCode GO）和 Hindsight 记忆状态。支持自动刷新和手动刷新。
+AIUsageMonitor 是一个 macOS 菜单栏轻量级系统监控工具，实时显示笔记本温度、CPU 使用率、AI 用量（DeepSeek / Tavily / MiniMax / OpenCode GO）和 Hindsight 记忆状态。支持自动刷新和手动刷新。
 
 ## 前置依赖
 
@@ -69,6 +69,7 @@ Control Plane 默认运行在 9999 端口，AIUsageMonitor 的原生看板窗口
 - 🌡️ **温度监控** — 实时显示电池温度、CPU 使用率、系统热状态
 - 🐋 **DeepSeek 余额监控** — 实时查询账户总余额、赠送余额、充值余额
 - 🔍 **Tavily 用量监控** — 查看月度额度、已用和剩余额度
+- ✨ **MiniMax Token Plan** — 中国区订阅用量卡片，每个模型族（general / video）显示 5h 滚动窗口 + 周窗口进度条（已用量百分比），底部倒计时「重置于 X 小时之后」
 - 🔄 **OpenCode GO 用量监控** — RPC 查询用量百分比，支持 WKWebView 内嵌登录与浏览器备选
 - 🧠 **Hindsight 原生看板** — 点击「看板」打开官方 Hindsight Control Plane（端口 9999），完整浏览记忆银行、搜索和实体关系
 - 🌐 **菜单栏网速显示** — 实时显示 `↓下载 ↑上传`，3 秒刷新
@@ -120,6 +121,12 @@ cp -r .build/release/AIUsageMonitor AIUsageMonitor.app/Contents/MacOS/
 ```
 
 ## 更新内容
+
+### v1.7.0
+
+- ✨ **MiniMax Token Plan 卡片** — 菜单栏新增中国区订阅用量卡片，每个模型族（general / video）显示 5h 滚动窗口 + 周窗口进度条（已用量百分比）和「重置于 X 小时之后」倒计时。需在设置中粘贴订阅 Key（eyJ... JWT 格式，与按量计费 API Key 不互通）
+- 🎛️ **设置** — 新增「MiniMax Token Plan」和「显示 video 模型」开关
+- 🗑️ **移除 OpenRouter** — 菜单栏卡片、服务、设置面板和开关全部删除（已是无用代码）
 
 ### v1.6.0
 

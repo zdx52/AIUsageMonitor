@@ -17,10 +17,10 @@
   <img alt="License" src="https://img.shields.io/github/license/zdx52/AIUsageMonitor">
   <img alt="Swift" src="https://img.shields.io/badge/swift-5.0-orange">
   <img alt="macOS" src="https://img.shields.io/badge/platform-macOS-lightgray">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.6.0-blue">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.7.0-blue">
 </p>
 
-AIUsageMonitor is a lightweight macOS menu bar system monitor that displays real-time laptop temperature, CPU usage, AI service usage (DeepSeek / Tavily / OpenCode GO), and Hindsight memory stats. Supports auto-refresh and manual refresh.
+AIUsageMonitor is a lightweight macOS menu bar system monitor that displays real-time laptop temperature, CPU usage, AI service usage (DeepSeek / Tavily / MiniMax / OpenCode GO), and Hindsight memory stats. Supports auto-refresh and manual refresh.
 
 ## Prerequisites
 
@@ -73,6 +73,7 @@ After installation:
 - 🌡️ **Temperature Monitor** — Real-time battery temp, CPU usage & thermal state
 - 🐋 **DeepSeek Balance** — Check total, granted & topped-up balance
 - 🔍 **Tavily Usage** — Monthly quota, used & remaining credits
+- ✨ **MiniMax Token Plan** — China subscription usage (5h + weekly windows per model family, with countdown reset)
 - 🔄 **OpenCode GO** — RPC usage % with WKWebView login & browser fallback
 - 🧠 **Hindsight Dashboard** — Opens native Hindsight Control Plane (port 9999) with official web UI for memory banks, recall, and entity exploration
 - 🌐 **Network Speed** — Real-time ↓↑ network speed, 3s refresh
@@ -124,6 +125,12 @@ cp -r .build/release/AIUsageMonitor AIUsageMonitor.app/Contents/MacOS/
 ```
 
 ## Changelog
+
+### v1.7.0
+
+- ✨ **MiniMax Token Plan card** — New menu bar card showing China subscription usage per model family (general / video): 5h rolling window + weekly window with progress bars (used %) and "重置于 X 小时之后" reset countdowns. Requires subscription Key (eyJ...) in Settings, separate from the pay-as-you-go API Key
+- 🎛️ **Settings** — Added "MiniMax Token Plan" + "show video model" toggles
+- 🗑️ **Removed OpenRouter** — Card, service, settings panel and toggle all removed (unused dead code)
 
 ### v1.6.0
 
