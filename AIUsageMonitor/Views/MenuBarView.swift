@@ -231,14 +231,14 @@ struct MenuBarView: View {
                                 Text("请在设置中配置 OpenCode 工作区")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
-                                
+
                             case .noCookies:
                                 OpenCodeLoginPanel(statusIcon: "exclamationmark.triangle", statusText: "登录已过期", statusColor: .orange)
                             case .needsLogin:
                                 OpenCodeLoginPanel(statusIcon: "exclamationmark.triangle", statusText: "需要登录", statusColor: .orange)
                             case .fetchFailed:
                                 OpenCodeLoginPanel(statusIcon: "xmark.circle.fill", statusText: "数据获取失败", statusColor: .red)
-                            
+
                             case .success:
                                 if let oc = dataStore.openCodeUsage {
                                     if let rolling = oc.rollingPercent {
@@ -249,7 +249,7 @@ struct MenuBarView: View {
                                                 .foregroundStyle(.tertiary)
                                         }
                                     }
-                                    
+
                                     if let weekly = oc.weeklyPercent {
                                         UsageProgressRow(label: "每周用量", percentage: weekly)
                                         if let reset = oc.weeklyReset {
@@ -258,7 +258,7 @@ struct MenuBarView: View {
                                                 .foregroundStyle(.tertiary)
                                         }
                                     }
-                                    
+
                                     if let monthly = oc.monthlyPercent {
                                         UsageProgressRow(label: "每月用量", percentage: monthly)
                                         if let reset = oc.monthlyReset {
@@ -267,7 +267,7 @@ struct MenuBarView: View {
                                                 .foregroundStyle(.tertiary)
                                         }
                                     }
-                                    
+
                                     if oc.rollingPercent == nil && oc.weeklyPercent == nil && oc.monthlyPercent == nil {
                                         if let pct = oc.rpcUsagePercent {
                                             UsageProgressRow(label: "用量", percentage: pct)
@@ -277,13 +277,48 @@ struct MenuBarView: View {
                                             UsageRow(label: "状态", value: "已订阅")
                                         }
                                     }
-                                    
+
                                     if oc.useBalance {
                                         Label("已启用余额补充", systemImage: "checkmark.circle.fill")
                                             .font(.caption)
                                             .foregroundStyle(.green)
                                     }
                                 }
+                            }
+                        }
+                    }
+
+                    // MARK: - MiniMax Token Plan
+                    if UserDefaults.standard.object(forKey: "showMiniMax") as? Bool ?? true {
+                        let showVideo = UserDefaults.standard.object(forKey: "showMiniMaxVideo") as? Bool ?? false
+                        UsageCard(
+                            icon: "sparkles",
+                            title: "MiniMax (中国)",
+                            iconColor: .pink,
+                            backgroundColor: .pink.opacity(0.08)
+                        ) {
+                            if let mx = dataStore.miniMaxUsage, mx.hasSubscriptionData {
+                                // 顶部状态 label（API status 错误 / 限流等）
+                                if let label = miniMaxStatusLabel(mx) {
+                                    label
+                                }
+                                // 各模型族：默认隐藏 video
+                                let visibleModels = mx.models.filter { model in
+                                    showVideo || model.modelName.lowercased() != "video"
+                                }
+                                ForEach(visibleModels, id: \.modelName) { model in
+                                    miniMaxModelSection(model)
+                                }
+                            } else if let mx = dataStore.miniMaxUsage, let code = mx.statusCode, code != 0 {
+                                Text("API 错误 \(code): \(mx.statusMsg ?? "")")
+                                    .font(.caption)
+                                    .foregroundStyle(.red)
+                            } else {
+                                Text("暂无数据")
+                                    .foregroundStyle(.secondary)
+                                Text("请在设置中配置 MiniMax 订阅 Key")
+                                    .font(.caption)
+                                    .foregroundStyle(.orange)
                             }
                         }
                     }
@@ -568,6 +603,84 @@ struct OpenCodeLoginButtons: View {
             }
             .buttonStyle(.bordered)
             .controlSize(.small)
+        }
+    }
+}
+
+// MARK: - MiniMax 渲染 helper
+
+extension MenuBarView {
+    /// 把「窗口剩余毫秒」格式化为「X 天 Y 小时之后」/「Y 小时 Z 分之后」
+    /// 与 OpenCode 卡片 reset 文本风格一致：直接说「重置于 X 之后」。
+    /// MiniMax API 的 `remains_time` / `weekly_remains_time` 是窗口剩余毫秒数（不是 epoch）。
+    func formatResetInMs(_ ms: Int64) -> String {
+        if ms <= 0 { return "即将重置" }
+        let totalSec = ms / 1000
+        let days = totalSec / 86400
+        let hours = (totalSec % 86400) / 3600
+        let minutes = (totalSec % 3600) / 60
+        if days > 0 {
+            return "\(days) 天 \(hours) 小时之后"
+        } else if hours > 0 {
+            return "\(hours) 小时 \(minutes) 分之后"
+        } else if minutes > 0 {
+            return "\(minutes) 分之后"
+        } else {
+            return "即将重置"
+        }
+    }
+
+    /// API 业务层异常 / 限流时显示的顶部状态 label（成功时返回 nil）
+    /// 当前未启用：单 model 的 status 图标已足够，顶部 label 语义不准。
+    func miniMaxStatusLabel(_ usage: MiniMaxUsage) -> AnyView? {
+        return nil
+    }
+
+    /// 单个模型族（general / video / ...）的渲染块：
+    /// - 模型名 + 状态图标（小标题）
+    /// - 5h 窗口「已用量」进度条 + 「重置于 X 之后」
+    /// - 周窗口「已用量」进度条 + 「重置于 X 之后」
+    @ViewBuilder
+    func miniMaxModelSection(_ model: MiniMaxModelUsage) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 4) {
+                Text(model.modelName.capitalized)
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                if let s = model.intervalStatus, s != 1 {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.caption2)
+                        .foregroundStyle(.orange)
+                } else if let s = model.weeklyStatus, s != 1 {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.caption2)
+                        .foregroundStyle(.orange)
+                }
+            }
+
+            // 5h 窗口：进度条用「已用量」百分比（100 - 剩余）
+            if let pct = model.intervalRemainingPercent {
+                let usedPct = max(0, min(100, 100 - pct))
+                UsageProgressRow(label: "5h 已用", percentage: Double(usedPct))
+                if let ms = model.intervalRemainsMs {
+                    Text("重置于 \(formatResetInMs(ms))")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+            }
+
+            // 周窗口：进度条用「已用量」百分比
+            if let pct = model.weeklyRemainingPercent {
+                let usedPct = max(0, min(100, 100 - pct))
+                UsageProgressRow(label: "周已用", percentage: Double(usedPct))
+                if let ms = model.weeklyRemainsMs {
+                    Text("重置于 \(formatResetInMs(ms))")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+            }
         }
     }
 }
