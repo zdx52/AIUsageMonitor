@@ -19,6 +19,9 @@ struct SettingsView: View {
     @State private var showTavily: Bool = true
     @State private var showMiniMax: Bool = true
     @State private var showMiniMaxVideo: Bool = false
+    @State private var showOpenRouter: Bool = true
+    @State private var showOpenRouterKey: Bool = false
+    @State private var openRouterKey: String = ""
     @State private var showOpenCode: Bool = true
     @State private var showHindsight: Bool = true
     
@@ -59,6 +62,7 @@ struct SettingsView: View {
                         Toggle("DeepSeek 余额", isOn: $showDeepSeek)
                         Toggle("Tavily 用量", isOn: $showTavily)
                         Toggle("MiniMax Token Plan", isOn: $showMiniMax)
+                        Toggle("OpenRouter 用量", isOn: $showOpenRouter)
                         Toggle("OpenCode GO 用量", isOn: $showOpenCode)
                         Toggle("Hindsight 记忆", isOn: $showHindsight)
                     }
@@ -119,7 +123,35 @@ struct SettingsView: View {
                     .padding(.vertical, 4)
                 }
                 
-                // OpenRouter 已删除（v1.7.0：菜单栏不再显示 OpenRouter 卡片）
+                // OpenRouter 设置
+                GroupBox("🌐 OpenRouter") {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Management Key（用于查询账户充值/用量；普通 API Key 无权限）")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+
+                        HStack {
+                            if showOpenRouterKey {
+                                TextField("sk-or-v1-...", text: $openRouterKey)
+                            } else {
+                                SecureField("sk-or-v1-...", text: $openRouterKey)
+                            }
+
+                            Button(action: { showOpenRouterKey.toggle() }) {
+                                Image(systemName: showOpenRouterKey ? "eye.slash" : "eye")
+                            }
+                        }
+
+                        Text("获取方式: openrouter.ai → Settings → Keys → 创建 Management Key")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+
+                        Text("⚠️ 需要 Management Key；普通 API Key 调用用量接口会返回 403")
+                            .font(.caption2)
+                            .foregroundColor(.orange)
+                    }
+                    .padding(.vertical, 4)
+                }
 
                 // MiniMax Token Plan 设置
                 GroupBox("✨ MiniMax (中国)") {
@@ -243,6 +275,7 @@ struct SettingsView: View {
         deepSeekKey = KeychainHelper.get(key: "deepseek_api_key") ?? ""
         tavilyKey = KeychainHelper.get(key: "tavily_api_key") ?? ""
         miniMaxSubscriptionKey = KeychainHelper.get(key: "minimax_subscription_key") ?? ""
+        openRouterKey = KeychainHelper.get(key: "openrouter_management_key") ?? ""
         openCodeURL = UserDefaults.standard.string(forKey: "openCodeWorkspaceURL") ?? ""
 
         if let interval = UserDefaults.standard.object(forKey: "refreshInterval") as? Double {
@@ -253,6 +286,7 @@ struct SettingsView: View {
         showTavily = UserDefaults.standard.object(forKey: "showTavily") as? Bool ?? true
         showMiniMax = UserDefaults.standard.object(forKey: "showMiniMax") as? Bool ?? true
         showMiniMaxVideo = UserDefaults.standard.object(forKey: "showMiniMaxVideo") as? Bool ?? false
+        showOpenRouter = UserDefaults.standard.object(forKey: "showOpenRouter") as? Bool ?? true
         showOpenCode = UserDefaults.standard.object(forKey: "showOpenCode") as? Bool ?? true
         showHindsight = UserDefaults.standard.object(forKey: "showHindsight") as? Bool ?? true
     }
@@ -261,12 +295,14 @@ struct SettingsView: View {
         KeychainHelper.save(key: "deepseek_api_key", value: deepSeekKey)
         KeychainHelper.save(key: "tavily_api_key", value: tavilyKey)
         KeychainHelper.save(key: "minimax_subscription_key", value: miniMaxSubscriptionKey)
+        KeychainHelper.save(key: "openrouter_management_key", value: openRouterKey)
         UserDefaults.standard.set(openCodeURL, forKey: "openCodeWorkspaceURL")
         UserDefaults.standard.set(refreshInterval, forKey: "refreshInterval")
         UserDefaults.standard.set(showDeepSeek, forKey: "showDeepSeek")
         UserDefaults.standard.set(showTavily, forKey: "showTavily")
         UserDefaults.standard.set(showMiniMax, forKey: "showMiniMax")
         UserDefaults.standard.set(showMiniMaxVideo, forKey: "showMiniMaxVideo")
+        UserDefaults.standard.set(showOpenRouter, forKey: "showOpenRouter")
         UserDefaults.standard.set(showOpenCode, forKey: "showOpenCode")
         UserDefaults.standard.set(showHindsight, forKey: "showHindsight")
         

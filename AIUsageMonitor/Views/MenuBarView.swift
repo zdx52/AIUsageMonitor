@@ -322,6 +322,54 @@ struct MenuBarView: View {
                             }
                         }
                     }
+
+                    // MARK: - OpenRouter 数据
+                    if UserDefaults.standard.object(forKey: "showOpenRouter") as? Bool ?? true {
+                        UsageCard(
+                            icon: "network",
+                            title: "OpenRouter",
+                            iconColor: .blue,
+                            backgroundColor: openRouterBackgroundColor
+                        ) {
+                            if let or = dataStore.openRouterUsage, or.hasUsageData {
+                                UsageRow(label: "总充值", value: "$\(String(format: "%.2f", or.totalCredits))")
+                                if let today = or.todaySpend {
+                                    UsageRow(label: "当日使用", value: "$\(String(format: "%.2f", today))")
+                                }
+
+                                VStack(alignment: .leading, spacing: 4) {
+                                    HStack {
+                                        Text("已用/总额度")
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                        Spacer()
+                                        Text("$\(String(format: "%.2f", or.totalUsage))/$\(String(format: "%.2f", or.totalCredits))")
+                                            .font(.caption)
+                                            .fontWeight(.medium)
+                                    }
+                                    ProgressBar(percentage: or.usedPercent)
+                                }
+
+                                UsageRow(label: "剩余", value: "$\(String(format: "%.2f", or.remaining))")
+
+                                if or.usedPercent >= 80 {
+                                    Label("额度即将耗尽，请及时充值", systemImage: "exclamationmark.triangle.fill")
+                                        .font(.caption)
+                                        .foregroundStyle(.red)
+                                } else if or.usedPercent >= 50 {
+                                    Label("额度使用过半", systemImage: "exclamationmark.triangle")
+                                        .font(.caption)
+                                        .foregroundStyle(.orange)
+                                }
+                            } else {
+                                Text("暂无数据")
+                                    .foregroundStyle(.secondary)
+                                Text("请在设置中配置 OpenRouter Management Key")
+                                    .font(.caption)
+                                    .foregroundStyle(.orange)
+                            }
+                        }
+                    }
                 }
                 .frame(maxWidth: .infinity)
             }
@@ -434,6 +482,20 @@ struct MenuBarView: View {
         return .purple.opacity(0.1)
     }
     
+    // MARK: - OpenRouter 背景色（额度预警）
+
+    private var openRouterBackgroundColor: Color {
+        guard let or = dataStore.openRouterUsage, or.hasUsageData else {
+            return .blue.opacity(0.1)
+        }
+        if or.usedPercent >= 80 {
+            return .red.opacity(0.12)
+        } else if or.usedPercent >= 50 {
+            return .orange.opacity(0.12)
+        }
+        return .blue.opacity(0.1)
+    }
+
     // MARK: - 温度颜色
     
     private func thermalStateColor(_ state: ProcessInfo.ThermalState) -> Color {

@@ -181,10 +181,84 @@ final class ModelDecodingTests: XCTestCase {
     }
     
     // MARK: - OpenCodeStatus
-    
+
     func testOpenCodeStatusEquality() {
         XCTAssertEqual(OpenCodeStatus.notConfigured, OpenCodeStatus.notConfigured)
         XCTAssertNotEqual(OpenCodeStatus.notConfigured, OpenCodeStatus.needsLogin)
         XCTAssertEqual(OpenCodeStatus.noCookies, OpenCodeStatus.noCookies)
+    }
+
+    // MARK: - OpenRouter 解码
+
+    func testDecodeOpenRouterCredits() throws {
+        let json = """
+        {
+            "data": {
+                "total_credits": 100.5,
+                "total_usage": 25.75
+            }
+        }
+        """
+        let data = json.data(using: .utf8)!
+        let result = try JSONDecoder().decode(OpenRouterCreditsResponse.self, from: data)
+
+        XCTAssertEqual(result.data?.totalCredits, 100.5)
+        XCTAssertEqual(result.data?.totalUsage, 25.75)
+    }
+
+    func testOpenRouterUsageAggregations() {
+        let usage = OpenRouterUsage(totalCredits: 100.5, totalUsage: 25.75)
+
+        XCTAssertTrue(usage.hasUsageData)
+        XCTAssertEqual(usage.remaining, 74.75, accuracy: 0.001)
+        XCTAssertEqual(usage.usedPercent, 25.62189, accuracy: 0.001)
+    }
+
+    func testOpenRouterUsageEmpty() {
+        let usage = OpenRouterUsage(totalCredits: 0, totalUsage: 0)
+
+        XCTAssertFalse(usage.hasUsageData)
+        XCTAssertEqual(usage.remaining, 0)
+        XCTAssertEqual(usage.usedPercent, 0)
+    }
+
+    func testOpenRouterUsageOverdrawClamped() {
+        // 使用超过充值额 → 剩余归 0，百分比钳到 100
+        let usage = OpenRouterUsage(totalCredits: 10, totalUsage: 50)
+
+        XCTAssertEqual(usage.remaining, 0)
+        XCTAssertEqual(usage.usedPercent, 100)
+    }
+
+    func testDecodeOpenRouterAnalyticsCreatedAtKey() throws {
+        // 官方示例：created_at__day 前缀 + total_usage 为数字
+        let json = """
+        {
+            "data": {
+                "data": [
+                    { "created_at__day": "2026-08-20", "total_usage": 1.23 }
+                ],
+                "metadata": { "row_count": 1, "truncated": false }
+            }
+        }
+        """
+        let data = json.data(using: .utf8)!
+        let result = try JSONDecoder().decode(OpenRouterAnalyticsResponse.self, from: data)
+
+        XCTAssertEqual(result.data.rows.count, 1)
+        XCTAssertEqual(result.data.rows[0].day, "2026-08-20")
+        XCTAssertEqual(result.data.rows[0].totalUsage, 1.23)
+    }
+
+    func testDecodeOpenRouterAnalyticsStringUsage() throws {
+        // total_usage 可能返回字符串，需兼容
+        let json = """
+        {"data": { "data": [ { "date__day": "2026-08-20", "total_usage": "2.50" } ] } }
+        """
+        let data = json.data(using: .utf8)!
+        let result = try JSONDecoder().decode(OpenRouterAnalyticsResponse.self, from: data)
+
+        XCTAssertEqual(result.data.rows[0].day, "2026-08-20")
+        XCTAssertEqual(result.data.rows[0].totalUsage, 2.5)
     }
 }

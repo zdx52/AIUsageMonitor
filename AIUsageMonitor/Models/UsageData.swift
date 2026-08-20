@@ -52,6 +52,7 @@ class DataStore: ObservableObject {
     @Published var deepSeekBalance: DeepSeekUsage?
     @Published var tavilyUsage: TavilyUsage?
     @Published var miniMaxUsage: MiniMaxUsage?
+    @Published var openRouterUsage: OpenRouterUsage?
     @Published var openCodeUsage: OpenCodeUsage?
     @Published var openCodeNeedsLogin: Bool = false
     @Published var openCodeStatus: OpenCodeStatus = .notConfigured
@@ -78,6 +79,7 @@ class DataStore: ObservableObject {
         async let tvUsage = fetchTavilyUsage()
         async let ocUsage = fetchOpenCodeUsage()
         async let mxUsage = MiniMaxService.fetchTokenPlan()
+        async let orUsage = OpenRouterService.fetchUsage()
         
         let ds = await dsBalance
         print("📊 refreshAll: DeepSeek balance = \(ds?.totalBalance != nil ? String(ds!.totalBalance) : "nil")")
@@ -86,6 +88,7 @@ class DataStore: ObservableObject {
         print("📊 refreshAll: Tavily data = \(tavilyData != nil ? "\(tavilyData!.plan) used:\(tavilyData!.creditsUsed)/\(tavilyData!.monthlyLimit)" : "nil")")
         let openCodeData = await ocUsage
         let miniMaxData = await mxUsage
+        let openRouterData = await orUsage
         
         // 合并 DeepSeek 余额和今日消耗
         if var balance = ds {
@@ -138,6 +141,9 @@ class DataStore: ObservableObject {
 
         // MiniMax Token Plan
         self.miniMaxUsage = miniMaxData
+
+        // OpenRouter 账户用量
+        self.openRouterUsage = openRouterData
         
         self.lastRefreshTime = Date()
         let interval = UserDefaults.standard.object(forKey: "refreshInterval") as? Double ?? 300
@@ -220,6 +226,11 @@ class DataStore: ObservableObject {
                 healthLevel = .warning
                 return
             }
+        }
+        if let or = openRouterUsage, or.hasUsageData, or.usedPercent >= 75 {
+            // OpenRouter 额度使用 >= 75% 告警
+            healthLevel = .warning
+            return
         }
         if let oc = openCodeUsage, let pct = oc.rpcUsagePercent, pct > 80 {
             healthLevel = .warning
