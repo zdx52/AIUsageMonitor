@@ -17,10 +17,10 @@
   <img alt="License" src="https://img.shields.io/github/license/zdx52/AIUsageMonitor">
   <img alt="Swift" src="https://img.shields.io/badge/swift-5.0-orange">
   <img alt="macOS" src="https://img.shields.io/badge/platform-macOS-lightgray">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.7.0-blue">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.8.0-blue">
 </p>
 
-AIUsageMonitor is a lightweight macOS menu bar system monitor that displays real-time laptop temperature, CPU usage, AI service usage (DeepSeek / Tavily / MiniMax / OpenCode GO), and Hindsight memory stats. Supports auto-refresh and manual refresh.
+AIUsageMonitor is a lightweight macOS menu bar system monitor that displays real-time laptop temperature, CPU usage, AI service usage (DeepSeek / Tavily / MiniMax / OpenRouter / OpenCode GO), and Hindsight memory stats. Supports auto-refresh and manual refresh.
 
 ## Prerequisites
 
@@ -73,6 +73,7 @@ After installation:
 - 🌡️ **Temperature Monitor** — Real-time battery temp, CPU usage & thermal state
 - 🐋 **DeepSeek Balance** — Check total, granted & topped-up balance
 - 🔍 **Tavily Usage** — Monthly quota, used & remaining credits
+- 🌐 **OpenRouter Usage** — Account balance (total/used/remaining) + today's spend via the Analytics API. Requires a Management Key
 - ✨ **MiniMax Token Plan** — China subscription usage (5h + weekly windows per model family, with countdown reset)
 - 🔄 **OpenCode GO** — RPC usage % with WKWebView login & browser fallback
 - 🧠 **Hindsight Dashboard** — Opens native Hindsight Control Plane (port 9999) with official web UI for memory banks, recall, and entity exploration
@@ -98,6 +99,10 @@ After installation:
 - Supports WKWebView embedded login (GitHub / Google OAuth)
 - System browser login as fallback
 - Manual confirmation button on login failure
+
+### OpenRouter
+- Balance via `https://openrouter.ai/api/v1/credits` (requires a Management Key)
+- Today's spend via `POST https://openrouter.ai/api/v1/analytics/query` (beta Analytics API, grouped by day, UTC-aligned)
 
 ## FAQ
 
@@ -125,6 +130,11 @@ cp -r .build/release/AIUsageMonitor AIUsageMonitor.app/Contents/MacOS/
 ```
 
 ## Changelog
+
+### v1.8.0
+
+- 🌐 **OpenRouter Usage card (re-added)** — Menu bar card showing account balance (total credits / used / remaining) from the `/api/v1/credits` endpoint, plus **today's spend** from the beta Analytics API (`/api/v1/analytics/query`), grouped by day. Requires an OpenRouter **Management Key** in Settings
+- 🎛️ **Settings** — Added "OpenRouter 用量" toggle + Management Key input
 
 ### v1.7.0
 
