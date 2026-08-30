@@ -13,10 +13,10 @@
   <img alt="License" src="https://img.shields.io/github/license/zdx52/AIUsageMonitor">
   <img alt="Swift" src="https://img.shields.io/badge/swift-5.0-orange">
   <img alt="macOS" src="https://img.shields.io/badge/platform-macOS-lightgray">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.8.0-blue">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.9.0-blue">
 </p>
 
-AIUsageMonitor 是一个 macOS 菜单栏轻量级系统监控工具，实时显示笔记本温度、CPU 使用率、AI 用量（DeepSeek / Tavily / MiniMax / OpenRouter / OpenCode GO）和 Hindsight 记忆状态。支持自动刷新和手动刷新。
+AIUsageMonitor 是一个 macOS 菜单栏轻量级系统监控工具，实时显示笔记本温度、CPU 使用率、AI 用量（DeepSeek / Tavily / MiniMax / OpenRouter / Command Code / OpenCode GO）和 Hindsight 记忆状态。支持自动刷新和手动刷新。
 
 ## 前置依赖
 
@@ -126,6 +126,11 @@ cp -r .build/release/AIUsageMonitor AIUsageMonitor.app/Contents/MacOS/
 ```
 
 ## 更新内容
+
+### v1.9.0
+
+- 🐐 **Command Code 用量卡片** — 菜单栏新增订阅用量卡片（GOAT / Pro / Max 通用）：月度剩余额度 vs $70 上限进度条、5 小时和每周滚动窗口用量条（含重置倒计时）、本期总花费/请求数/Tokens。与 CLI 共用同一把 API Key（内部 `/alpha/*` 端点：whoami、billing/credits、billing/subscriptions、usage/summary）
+- 🎛️ **设置** — 新增「Command Code 用量」开关和 API Key 输入框
 
 ### v1.8.0
 

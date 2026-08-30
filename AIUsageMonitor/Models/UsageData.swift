@@ -53,6 +53,7 @@ class DataStore: ObservableObject {
     @Published var tavilyUsage: TavilyUsage?
     @Published var miniMaxUsage: MiniMaxUsage?
     @Published var openRouterUsage: OpenRouterUsage?
+    @Published var commandCodeUsage: CommandCodeUsage?
     @Published var openCodeUsage: OpenCodeUsage?
     @Published var openCodeNeedsLogin: Bool = false
     @Published var openCodeStatus: OpenCodeStatus = .notConfigured
@@ -80,6 +81,7 @@ class DataStore: ObservableObject {
         async let ocUsage = fetchOpenCodeUsage()
         async let mxUsage = MiniMaxService.fetchTokenPlan()
         async let orUsage = OpenRouterService.fetchUsage()
+        async let ccUsage = CommandCodeService.fetchUsage()
         
         let ds = await dsBalance
         print("📊 refreshAll: DeepSeek balance = \(ds?.totalBalance != nil ? String(ds!.totalBalance) : "nil")")
@@ -89,6 +91,7 @@ class DataStore: ObservableObject {
         let openCodeData = await ocUsage
         let miniMaxData = await mxUsage
         let openRouterData = await orUsage
+        let commandCodeData = await ccUsage
         
         // 合并 DeepSeek 余额和今日消耗
         if var balance = ds {
@@ -144,6 +147,9 @@ class DataStore: ObservableObject {
 
         // OpenRouter 账户用量
         self.openRouterUsage = openRouterData
+
+        // Command Code 用量
+        self.commandCodeUsage = commandCodeData
         
         self.lastRefreshTime = Date()
         let interval = UserDefaults.standard.object(forKey: "refreshInterval") as? Double ?? 300
@@ -229,6 +235,11 @@ class DataStore: ObservableObject {
         }
         if let or = openRouterUsage, or.hasUsageData, or.usedPercent >= 75 {
             // OpenRouter 额度使用 >= 75% 告警
+            healthLevel = .warning
+            return
+        }
+        if let cc = commandCodeUsage, cc.monthlyUsedPercent >= 90 {
+            // Command Code 月度额度使用 >= 90% 告警
             healthLevel = .warning
             return
         }

@@ -14,6 +14,7 @@
 | [app-bundle-deploy.md](deployment/app-bundle-deploy.md) | 工具决策 | deploy.sh 一键部署 + 版本号同步 |
 | [keychain-acl-resign.md](deployment/keychain-acl-resign.md) | Bug 排查 | ad-hoc 重签名使 keychain ACL 失联 → SecItemCopyMatching 阻塞 securityd，填 key 无效 |
 | [openrouter-usage-integration.md](deployment/openrouter-usage-integration.md) | 架构模式 | OpenRouter 用量监控：/credits 余额 + Analytics API 当日花费（Management Key / UTC 日对齐 / 字段防御解析） |
+| [commandcode-usage-integration.md](deployment/commandcode-usage-integration.md) | 架构模式 | Command Code GOAT 用量监控：CLI /usage 同源的 /alpha/* 端点（whoami / billing/credits / subscriptions / usage/summary） |
 | [flask-web-in-swift-app.md](deployment/flask-web-in-swift-app.md) | 架构决策 | Flask web 集成进 Swift 菜单栏 app（路径依赖/venv/进程管理） |
 | [dock-window-presence.md](deployment/dock-window-presence.md) | 架构模式 | 菜单栏 app 窗口开→Dock 图标出现、全关→消失（activationPolicy 动态切换） |
 | [github-auth-token.md](tooling/github-auth-token.md) | 工具决策 | GITHUB_TOKEN / gh CLI 认证方式 |

@@ -22,6 +22,9 @@ struct SettingsView: View {
     @State private var showOpenRouter: Bool = true
     @State private var showOpenRouterKey: Bool = false
     @State private var openRouterKey: String = ""
+    @State private var showCommandCode: Bool = true
+    @State private var showCommandCodeKey: Bool = false
+    @State private var commandCodeKey: String = ""
     @State private var showOpenCode: Bool = true
     @State private var showHindsight: Bool = true
     
@@ -63,6 +66,7 @@ struct SettingsView: View {
                         Toggle("Tavily 用量", isOn: $showTavily)
                         Toggle("MiniMax Token Plan", isOn: $showMiniMax)
                         Toggle("OpenRouter 用量", isOn: $showOpenRouter)
+                        Toggle("Command Code 用量", isOn: $showCommandCode)
                         Toggle("OpenCode GO 用量", isOn: $showOpenCode)
                         Toggle("Hindsight 记忆", isOn: $showHindsight)
                     }
@@ -147,6 +151,36 @@ struct SettingsView: View {
                             .foregroundColor(.secondary)
 
                         Text("⚠️ 需要 Management Key；普通 API Key 调用用量接口会返回 403")
+                            .font(.caption2)
+                            .foregroundColor(.orange)
+                    }
+                    .padding(.vertical, 4)
+                }
+
+                // Command Code 设置
+                GroupBox("🐐 Command Code") {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("API Key（用于查询 GOAT 订阅用量/限额）")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+
+                        HStack {
+                            if showCommandCodeKey {
+                                TextField("user_...", text: $commandCodeKey)
+                            } else {
+                                SecureField("user_...", text: $commandCodeKey)
+                            }
+
+                            Button(action: { showCommandCodeKey.toggle() }) {
+                                Image(systemName: showCommandCodeKey ? "eye.slash" : "eye")
+                            }
+                        }
+
+                        Text("获取方式: commandcode.ai → Studio → API Keys → 生成")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+
+                        Text("⚠️ 同一把 key 同时用于 CLI / Provider API / 用量查询")
                             .font(.caption2)
                             .foregroundColor(.orange)
                     }
@@ -276,6 +310,7 @@ struct SettingsView: View {
         tavilyKey = KeychainHelper.get(key: "tavily_api_key") ?? ""
         miniMaxSubscriptionKey = KeychainHelper.get(key: "minimax_subscription_key") ?? ""
         openRouterKey = KeychainHelper.get(key: "openrouter_management_key") ?? ""
+        commandCodeKey = KeychainHelper.get(key: "commandcode_api_key") ?? ""
         openCodeURL = UserDefaults.standard.string(forKey: "openCodeWorkspaceURL") ?? ""
 
         if let interval = UserDefaults.standard.object(forKey: "refreshInterval") as? Double {
@@ -287,6 +322,7 @@ struct SettingsView: View {
         showMiniMax = UserDefaults.standard.object(forKey: "showMiniMax") as? Bool ?? true
         showMiniMaxVideo = UserDefaults.standard.object(forKey: "showMiniMaxVideo") as? Bool ?? false
         showOpenRouter = UserDefaults.standard.object(forKey: "showOpenRouter") as? Bool ?? true
+        showCommandCode = UserDefaults.standard.object(forKey: "showCommandCode") as? Bool ?? true
         showOpenCode = UserDefaults.standard.object(forKey: "showOpenCode") as? Bool ?? true
         showHindsight = UserDefaults.standard.object(forKey: "showHindsight") as? Bool ?? true
     }
@@ -296,6 +332,7 @@ struct SettingsView: View {
         KeychainHelper.save(key: "tavily_api_key", value: tavilyKey)
         KeychainHelper.save(key: "minimax_subscription_key", value: miniMaxSubscriptionKey)
         KeychainHelper.save(key: "openrouter_management_key", value: openRouterKey)
+        KeychainHelper.save(key: "commandcode_api_key", value: commandCodeKey)
         UserDefaults.standard.set(openCodeURL, forKey: "openCodeWorkspaceURL")
         UserDefaults.standard.set(refreshInterval, forKey: "refreshInterval")
         UserDefaults.standard.set(showDeepSeek, forKey: "showDeepSeek")
@@ -303,6 +340,7 @@ struct SettingsView: View {
         UserDefaults.standard.set(showMiniMax, forKey: "showMiniMax")
         UserDefaults.standard.set(showMiniMaxVideo, forKey: "showMiniMaxVideo")
         UserDefaults.standard.set(showOpenRouter, forKey: "showOpenRouter")
+        UserDefaults.standard.set(showCommandCode, forKey: "showCommandCode")
         UserDefaults.standard.set(showOpenCode, forKey: "showOpenCode")
         UserDefaults.standard.set(showHindsight, forKey: "showHindsight")
         

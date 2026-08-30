@@ -288,6 +288,81 @@ struct MenuBarView: View {
                         }
                     }
 
+                    // MARK: - Command Code 数据
+                    if UserDefaults.standard.object(forKey: "showCommandCode") as? Bool ?? true {
+                        UsageCard(
+                            icon: "hare.fill",
+                            title: "Command Code",
+                            iconColor: .green,
+                            backgroundColor: commandCodeBackgroundColor
+                        ) {
+                            if let cc = dataStore.commandCodeUsage, cc.hasUsageData {
+                                if let plan = cc.plan {
+                                    UsageRow(label: "计划", value: plan.replacingOccurrences(of: "individual-", with: "").uppercased())
+                                }
+
+                                // 月度额度
+                                if let mc = cc.monthlyCredits {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        HStack {
+                                            Text("月度额度")
+                                                .font(.caption)
+                                                .foregroundStyle(.secondary)
+                                            Spacer()
+                                            Text("$\(String(format: "%.2f", cc.monthlyCap - mc))/月已用 $\(String(format: "%.2f", cc.monthlyCap))")
+                                                .font(.caption)
+                                                .fontWeight(.medium)
+                                        }
+                                        ProgressBar(percentage: cc.monthlyUsedPercent)
+                                    }
+                                    UsageRow(label: "剩余", value: "$\(String(format: "%.2f", mc))")
+                                }
+
+                                // 5小时窗口
+                                if let fh = cc.fiveHourUsed, let cap = cc.fiveHourCap, cap > 0 {
+                                    UsageProgressRow(label: "5小时窗口", percentage: fh / cap * 100)
+                                }
+
+                                // 每周窗口
+                                if let wk = cc.weeklyUsed, let cap = cc.weeklyCap, cap > 0 {
+                                    UsageProgressRow(label: "每周窗口", percentage: wk / cap * 100)
+                                    if let reset = cc.resetAt {
+                                        Text("重置于 \(reset, style: .relative)")
+                                            .font(.caption2)
+                                            .foregroundStyle(.tertiary)
+                                    }
+                                }
+
+                                // 本期汇总
+                                if let cost = cc.periodTotalCost {
+                                    UsageRow(label: "本期花费", value: "$\(String(format: "%.2f", cost))")
+                                }
+                                if let count = cc.periodTotalCount {
+                                    UsageRow(label: "请求数", value: "\(count)")
+                                }
+                                if let tokens = cc.periodTotalTokens {
+                                    UsageRow(label: "Tokens", value: formatTokenCount(tokens))
+                                }
+
+                                if cc.monthlyUsedPercent >= 90 {
+                                    Label("月度额度即将耗尽", systemImage: "exclamationmark.triangle.fill")
+                                        .font(.caption)
+                                        .foregroundStyle(.red)
+                                } else if cc.monthlyUsedPercent >= 70 {
+                                    Label("月度额度使用过半", systemImage: "exclamationmark.triangle")
+                                        .font(.caption)
+                                        .foregroundStyle(.orange)
+                                }
+                            } else {
+                                Text("暂无数据")
+                                    .foregroundStyle(.secondary)
+                                Text("请在设置中配置 Command Code API Key")
+                                    .font(.caption)
+                                    .foregroundStyle(.orange)
+                            }
+                        }
+                    }
+
                     // MARK: - MiniMax Token Plan
                     if UserDefaults.standard.object(forKey: "showMiniMax") as? Bool ?? true {
                         let showVideo = UserDefaults.standard.object(forKey: "showMiniMaxVideo") as? Bool ?? false
@@ -496,6 +571,20 @@ struct MenuBarView: View {
         return .blue.opacity(0.1)
     }
 
+    // MARK: - Command Code 背景色（月度额度预警）
+
+    private var commandCodeBackgroundColor: Color {
+        guard let cc = dataStore.commandCodeUsage, cc.hasUsageData else {
+            return .green.opacity(0.1)
+        }
+        if cc.monthlyUsedPercent >= 90 {
+            return .red.opacity(0.12)
+        } else if cc.monthlyUsedPercent >= 70 {
+            return .orange.opacity(0.12)
+        }
+        return .green.opacity(0.1)
+    }
+
     // MARK: - 温度颜色
     
     private func thermalStateColor(_ state: ProcessInfo.ThermalState) -> Color {
@@ -506,6 +595,16 @@ struct MenuBarView: View {
         case .critical:  return .purple
         @unknown default: return .secondary
         }
+    }
+
+    /// 格式化大数字 token 数（2.4M / 15.6K）
+    private func formatTokenCount(_ count: Double) -> String {
+        if count >= 1_000_000 {
+            return String(format: "%.1fM", count / 1_000_000)
+        } else if count >= 1_000 {
+            return String(format: "%.1fK", count / 1_000)
+        }
+        return "\(Int(count))"
     }
 }
 
