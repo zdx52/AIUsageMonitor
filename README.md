@@ -17,7 +17,7 @@
   <img alt="License" src="https://img.shields.io/github/license/zdx52/AIUsageMonitor">
   <img alt="Swift" src="https://img.shields.io/badge/swift-5.0-orange">
   <img alt="macOS" src="https://img.shields.io/badge/platform-macOS-lightgray">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.9.0-blue">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.10.0-blue">
 </p>
 
 AIUsageMonitor is a lightweight macOS menu bar system monitor that displays real-time laptop temperature, CPU usage, AI service usage (DeepSeek / Tavily / MiniMax / OpenRouter / Command Code / OpenCode GO), and Hindsight memory stats. Supports auto-refresh and manual refresh.
@@ -130,6 +130,11 @@ cp -r .build/release/AIUsageMonitor AIUsageMonitor.app/Contents/MacOS/
 ```
 
 ## Changelog
+
+### v1.10.0
+
+- 📊 **Command Code card: percentage + reset countdowns** — Monthly allowance now shows as a percentage (used %), with reset countdowns in "Xh Ym" / "Xd Xh" format below the 5-hour, weekly, and monthly meters. Monthly reset is sourced from the billing period end (`currentPeriodEnd`, fixed fractional-seconds parsing)
+- 🗓️ **Order** — Monthly meter moved below the weekly meter (5-hour → weekly → monthly)
 
 ### v1.9.0
 

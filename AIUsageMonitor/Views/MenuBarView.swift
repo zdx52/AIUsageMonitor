@@ -301,33 +301,31 @@ struct MenuBarView: View {
                                     UsageRow(label: "计划", value: plan.replacingOccurrences(of: "individual-", with: "").uppercased())
                                 }
 
-                                // 月度额度
-                                if let mc = cc.monthlyCredits {
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        HStack {
-                                            Text("月度额度")
-                                                .font(.caption)
-                                                .foregroundStyle(.secondary)
-                                            Spacer()
-                                            Text("$\(String(format: "%.2f", cc.monthlyCap - mc))/月已用 $\(String(format: "%.2f", cc.monthlyCap))")
-                                                .font(.caption)
-                                                .fontWeight(.medium)
-                                        }
-                                        ProgressBar(percentage: cc.monthlyUsedPercent)
-                                    }
-                                    UsageRow(label: "剩余", value: "$\(String(format: "%.2f", mc))")
-                                }
-
                                 // 5小时窗口
                                 if let fh = cc.fiveHourUsed, let cap = cc.fiveHourCap, cap > 0 {
                                     UsageProgressRow(label: "5小时窗口", percentage: fh / cap * 100)
+                                    if let reset = cc.fiveHourResetAt {
+                                        Text("重置于 \(countdownText(from: reset))")
+                                            .font(.caption2)
+                                            .foregroundStyle(.tertiary)
+                                    }
                                 }
 
                                 // 每周窗口
                                 if let wk = cc.weeklyUsed, let cap = cc.weeklyCap, cap > 0 {
                                     UsageProgressRow(label: "每周窗口", percentage: wk / cap * 100)
                                     if let reset = cc.resetAt {
-                                        Text("重置于 \(reset, style: .relative)")
+                                        Text("重置于 \(countdownText(from: reset))")
+                                            .font(.caption2)
+                                            .foregroundStyle(.tertiary)
+                                    }
+                                }
+
+                                // 月度额度（官网：GOAT 月限额 $70，百分数显示）
+                                if cc.monthlyCredits != nil {
+                                    UsageProgressRow(label: "月度额度", percentage: cc.monthlyUsedPercent)
+                                    if let reset = cc.monthlyResetAt {
+                                        Text("重置于 \(countdownText(from: reset))")
                                             .font(.caption2)
                                             .foregroundStyle(.tertiary)
                                     }
@@ -658,6 +656,19 @@ struct UsageRow: View {
                 .fontWeight(.semibold)
         }
     }
+}
+
+// MARK: - 倒计时格式化
+
+/// 距离重置时间的倒计时文案（向上取整，避免显示 0 分钟）。
+func countdownText(from date: Date) -> String {
+    let seconds = Int(max(0, date.timeIntervalSinceNow))
+    let days = seconds / 86400
+    let hours = (seconds % 86400) / 3600
+    let minutes = (seconds % 3600 + 59) / 60
+    if days > 0 { return "\(days)天\(hours)小时" }
+    if hours > 0 { return "\(hours)小时\(minutes)分钟" }
+    return "\(max(minutes, 1))分钟"
 }
 
 // MARK: - 进度条行（标签 + 进度条 + 百分比）

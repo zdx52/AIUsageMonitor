@@ -127,6 +127,11 @@ cp -r .build/release/AIUsageMonitor AIUsageMonitor.app/Contents/MacOS/
 
 ## 更新内容
 
+### v1.10.0
+
+- 📊 **Command Code 卡片：百分比 + 重置倒计时** — 月度额度改为百分比显示（已用 %），5 小时 / 每周 / 月度三个进度条下新增「重置于 X小时X分钟 / X天X小时」倒计时。月度重置取账单周期结束（`currentPeriodEnd`，修复毫秒时间戳解析）
+- 🗓️ **顺序调整** — 月度额度移到每周窗口下方（5小时 → 每周 → 月度）
+
 ### v1.9.0
 
 - 🐐 **Command Code 用量卡片** — 菜单栏新增订阅用量卡片（GOAT / Pro / Max 通用）：月度剩余额度 vs $70 上限进度条、5 小时和每周滚动窗口用量条（含重置倒计时）、本期总花费/请求数/Tokens。与 CLI 共用同一把 API Key（内部 `/alpha/*` 端点：whoami、billing/credits、billing/subscriptions、usage/summary）

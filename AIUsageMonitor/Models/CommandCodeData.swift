@@ -71,7 +71,9 @@ struct CommandCodeUsage: Equatable {
     var fiveHourCap: Double?     // 5 小时窗口上限（GOAT = $14）
     var weeklyUsed: Double?      // 每周窗口已用
     var weeklyCap: Double?       // 每周窗口上限（GOAT = $35）
-    var resetAt: Date?           // 窗口重置时间
+    var resetAt: Date?           // 每周窗口重置时间
+    var fiveHourResetAt: Date?   // 5小时窗口重置时间
+    var monthlyResetAt: Date?    // 月度额度重置时间（billing period 结束）
     var periodTotalCost: Double? // 本期（billing period）总花费
     var periodTotalCount: Int?   // 本期请求数
     var periodTotalTokens: Double? // 本期总 tokens

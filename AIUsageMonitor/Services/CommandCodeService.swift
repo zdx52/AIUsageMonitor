@@ -42,6 +42,9 @@ class CommandCodeService {
             usage.fiveHourCap = wl.fiveHour?.cap ?? usage.fiveHourCap
             usage.weeklyUsed = wl.weekly?.used
             usage.weeklyCap = wl.weekly?.cap ?? usage.weeklyCap
+            if let reset = wl.fiveHour?.resetAt {
+                usage.fiveHourResetAt = Date(timeIntervalSince1970: TimeInterval(reset) / 1000)
+            }
             if let reset = wl.weekly?.resetAt {
                 usage.resetAt = Date(timeIntervalSince1970: TimeInterval(reset) / 1000)
             }
@@ -50,6 +53,12 @@ class CommandCodeService {
             usage.periodTotalCost = s.totalCost
             usage.periodTotalCount = s.totalCount
             usage.periodTotalTokens = s.totalTokens ?? s.totalTokensIn
+        }
+        if let periodEnd = sub?.data?.currentPeriodEnd {
+            // API 返回带毫秒（.000Z），默认 ISO8601 解析不了，需开 withFractionalSeconds
+            let f = ISO8601DateFormatter()
+            f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            usage.monthlyResetAt = f.date(from: periodEnd) ?? ISO8601DateFormatter().date(from: periodEnd)
         }
 
         return usage.hasUsageData ? usage : nil
