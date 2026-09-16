@@ -17,7 +17,7 @@
   <img alt="License" src="https://img.shields.io/github/license/zdx52/AIUsageMonitor">
   <img alt="Swift" src="https://img.shields.io/badge/swift-5.0-orange">
   <img alt="macOS" src="https://img.shields.io/badge/platform-macOS-lightgray">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.10.0-blue">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.10.1-blue">
 </p>
 
 AIUsageMonitor is a lightweight macOS menu bar system monitor that displays real-time laptop temperature, CPU usage, AI service usage (DeepSeek / Tavily / MiniMax / OpenRouter / Command Code / OpenCode GO), and Hindsight memory stats. Supports auto-refresh and manual refresh.
@@ -130,6 +130,12 @@ cp -r .build/release/AIUsageMonitor AIUsageMonitor.app/Contents/MacOS/
 ```
 
 ## Changelog
+
+### v1.10.1
+
+- 🐛 **Bug fixes**
+  - **Command Code**: removed monthly allowance warning labels (over-70%/over-90% alerts); monthly meter and reset countdown moved below the weekly meter — new order: 5-hour → weekly → monthly → period summary
+  - **Tavily**: fixed JSON decode failure for free-tier users (`plan_limit: null`) by making `planLimit` optional; added `tavilyKeyConfigured` flag to distinguish "key configured but fetch failed" from "key not configured"
 
 ### v1.10.0
 

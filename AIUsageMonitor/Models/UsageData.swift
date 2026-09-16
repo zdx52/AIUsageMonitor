@@ -63,6 +63,7 @@ class DataStore: ObservableObject {
     @Published var healthLevel: ServiceHealth = .healthy
     @Published var isOpenCodeLoggingIn = false
     @Published var tavilyRateLimited = false
+    @Published var tavilyKeyConfigured = false
     private var lastSuccessfulTavily: TavilyUsage?
     @Published var networkSpeed: NetworkSpeedMonitor.Speed?
     @Published var hindsightStats: HindsightStats?
@@ -86,6 +87,8 @@ class DataStore: ObservableObject {
         let ds = await dsBalance
         print("📊 refreshAll: DeepSeek balance = \(ds?.totalBalance != nil ? String(ds!.totalBalance) : "nil")")
         let dsUsageData = await dsUsage
+        let hasTavilyKey = !(KeychainHelper.get(key: "tavily_api_key") ?? "").isEmpty
+        self.tavilyKeyConfigured = hasTavilyKey
         let tavilyData = await tvUsage
         print("📊 refreshAll: Tavily data = \(tavilyData != nil ? "\(tavilyData!.plan) used:\(tavilyData!.creditsUsed)/\(tavilyData!.monthlyLimit)" : "nil")")
         let openCodeData = await ocUsage

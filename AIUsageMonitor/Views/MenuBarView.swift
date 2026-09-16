@@ -206,6 +206,13 @@ struct MenuBarView: View {
                                         .font(.caption2)
                                         .foregroundStyle(.tertiary)
                                 }
+                            } else if dataStore.tavilyKeyConfigured {
+                                Label("获取失败，请检查网络或 Key", systemImage: "exclamationmark.triangle")
+                                    .font(.caption)
+                                    .foregroundStyle(.orange)
+                                Text("将在下次自动重试")
+                                    .font(.caption2)
+                                    .foregroundStyle(.tertiary)
                             } else {
                                 Text("暂无数据")
                                     .foregroundStyle(.secondary)
@@ -340,16 +347,6 @@ struct MenuBarView: View {
                                 }
                                 if let tokens = cc.periodTotalTokens {
                                     UsageRow(label: "Tokens", value: formatTokenCount(tokens))
-                                }
-
-                                if cc.monthlyUsedPercent >= 90 {
-                                    Label("月度额度即将耗尽", systemImage: "exclamationmark.triangle.fill")
-                                        .font(.caption)
-                                        .foregroundStyle(.red)
-                                } else if cc.monthlyUsedPercent >= 70 {
-                                    Label("月度额度使用过半", systemImage: "exclamationmark.triangle")
-                                        .font(.caption)
-                                        .foregroundStyle(.orange)
                                 }
                             } else {
                                 Text("暂无数据")

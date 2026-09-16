@@ -127,6 +127,12 @@ cp -r .build/release/AIUsageMonitor AIUsageMonitor.app/Contents/MacOS/
 
 ## 更新内容
 
+### v1.10.1
+
+- 🐛 **Bug 修复**
+  - **Command Code**：移除月度额度警告 label（使用过半/即将耗尽提示），月度额度和重置倒计时移至每周窗口下方，顺序：5小时 → 每周 → 月度额度 → 本期汇总
+  - **Tavily**：修复免费版用户（`plan_limit: null`）JSON 解码失败问题，`planLimit` 改为可选字段；新增 `tavilyKeyConfigured` 标记，区分「Key 已配置但获取失败」与「Key 未配置」两种状态
+
 ### v1.10.0
 
 - 📊 **Command Code 卡片：百分比 + 重置倒计时** — 月度额度改为百分比显示（已用 %），5 小时 / 每周 / 月度三个进度条下新增「重置于 X小时X分钟 / X天X小时」倒计时。月度重置取账单周期结束（`currentPeriodEnd`，修复毫秒时间戳解析）

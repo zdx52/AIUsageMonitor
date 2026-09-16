@@ -44,7 +44,7 @@ class TavilyService {
             
             let plan = usageResponse.account.currentPlan
             let creditsUsed = usageResponse.account.planUsage
-            let monthlyLimit = usageResponse.account.planLimit
+            let monthlyLimit = usageResponse.account.planLimit ?? 0
             let remaining = max(0, monthlyLimit - creditsUsed)
             
             return TavilyUsage(

@@ -8,7 +8,7 @@ struct TavilyUsageResponse: Codable {
     
     struct KeyUsage: Codable {
         let usage: Int
-        let limit: Int
+        let limit: Int?   // 免费版 limit 为 null
         let searchUsage: Int
         let crawlUsage: Int
         let extractUsage: Int
@@ -19,7 +19,7 @@ struct TavilyUsageResponse: Codable {
     struct AccountUsage: Codable {
         let currentPlan: String
         let planUsage: Int
-        let planLimit: Int
+        let planLimit: Int?   // 免费版 plan_limit 为 null
         let searchUsage: Int
         let crawlUsage: Int
         let extractUsage: Int
