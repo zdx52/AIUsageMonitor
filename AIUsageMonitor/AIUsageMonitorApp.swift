@@ -2,18 +2,8 @@ import SwiftUI
 import AppKit
 import Combine
 
-@main
-struct AIUsageMonitorApp: App {
-    @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
-    
-    var body: some Scene {
-        // 用 Settings 场景提供设置窗口，菜单栏由 AppDelegate 用 NSStatusItem 管理
-        Settings {
-            EmptyView()
-        }
-    }
-}
-
+// 入口在 main.swift（AppKit NSApplication），这里只放 AppDelegate。
+// 不要改回 @main + Settings 场景：那会让 macOS 启动时自动弹出空白"设置"窗口。
 @MainActor
 class AppDelegate: NSObject, NSApplicationDelegate {
     let dataStore = DataStore()

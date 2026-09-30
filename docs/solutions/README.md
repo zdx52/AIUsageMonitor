@@ -20,5 +20,6 @@
 | [aiusagemonitor-ui-usage-display-20260916.md](workflow/aiusagemonitor-ui-usage-display-20260916.md) | Bug 排查 | Command Code 月度额度布局遮挡 + Tavily 免费版 `plan_limit: null` 解码错误 + key 配置状态区分 |
 | [flask-web-in-swift-app.md](deployment/flask-web-in-swift-app.md) | 架构决策 | Flask web 集成进 Swift 菜单栏 app（路径依赖/venv/进程管理） |
 | [dock-window-presence.md](deployment/dock-window-presence.md) | 架构模式 | 菜单栏 app 窗口开→Dock 图标出现、全关→消失（activationPolicy 动态切换） |
+| [blank-swiftui-settings-window-on-launch.md](deployment/blank-swiftui-settings-window-on-launch.md) | Bug 排查 | 启动弹出空白「AIUsageMonitor 设置」窗口 = 唯一的 SwiftUI `Settings` 场景被 macOS 自动呈现 → 改纯 AppKit 入口 |
 | [github-auth-token.md](tooling/github-auth-token.md) | 工具决策 | GITHUB_TOKEN / gh CLI 认证方式 |
 | [repo-format-conventions.md](conventions/repo-format-conventions.md) | 约定 | README/About/版本号格式规范 |

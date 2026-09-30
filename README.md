@@ -17,7 +17,7 @@
   <img alt="License" src="https://img.shields.io/github/license/zdx52/AIUsageMonitor">
   <img alt="Swift" src="https://img.shields.io/badge/swift-5.0-orange">
   <img alt="macOS" src="https://img.shields.io/badge/platform-macOS-lightgray">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.11.0-blue">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.11.1-blue">
 </p>
 
 AIUsageMonitor is a lightweight macOS menu bar system monitor that displays real-time laptop temperature, CPU usage, AI service usage (DeepSeek / Tavily / MiniMax / OpenRouter / Command Code / OpenCode GO), and Hindsight memory stats. Supports auto-refresh and manual refresh.
@@ -130,6 +130,10 @@ cp -r .build/release/AIUsageMonitor AIUsageMonitor.app/Contents/MacOS/
 ```
 
 ## Changelog
+
+### v1.11.1
+
+- 🐛 **Blank settings window on launch** — the app's only SwiftUI scene was `Settings { EmptyView() }`, so macOS auto-presented it at launch as an empty "AIUsageMonitor 设置" window. The app now starts from a plain AppKit entry point (`main.swift`) with no SwiftUI App lifecycle; the real settings window is still the panel opened by the 设置 button
 
 ### v1.11.0
 

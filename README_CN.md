@@ -127,6 +127,10 @@ cp -r .build/release/AIUsageMonitor AIUsageMonitor.app/Contents/MacOS/
 
 ## 更新内容
 
+### v1.11.1
+
+- 🐛 **启动时弹出空白"设置"窗口** — 空窗口来自 SwiftUI 的 `Settings { EmptyView() }` 场景：它是 app 里唯一的场景，macOS 启动时会自动弹出。现在入口改为纯 AppKit（`main.swift`），不再有 SwiftUI App 生命周期；真正的设置窗口仍是菜单栏「设置」按钮打开的 NSPanel
+
 ### v1.11.0
 
 - 🔑 **OpenCode GO 支持 API Key 直查** — `GET /zen/go/v1/usage`（Bearer 鉴权）直接返回滚动/每周/每月用量百分比与重置时间，无需浏览器登录；未配置 Key 时回退原有 cookie/RPC 链路
