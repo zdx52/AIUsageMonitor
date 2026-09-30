@@ -134,7 +134,8 @@ class DataStore: ObservableObject {
             self.openCodeStatus = oc.status
         } else {
             let url = UserDefaults.standard.string(forKey: "openCodeWorkspaceURL") ?? ""
-            if url.isEmpty {
+            let hasGoKey = !(KeychainHelper.get(key: "opencode_go_api_key") ?? "").isEmpty
+            if url.isEmpty && !hasGoKey {
                 self.openCodeStatus = .notConfigured
                 self.openCodeNeedsLogin = false
             } else {
@@ -186,9 +187,10 @@ class DataStore: ObservableObject {
     private func fetchOpenCodeUsage() async -> OpenCodeUsage? {
         return await withTaskGroup(of: OpenCodeUsage?.self) { group in
             group.addTask {
-                guard let url = UserDefaults.standard.string(forKey: "openCodeWorkspaceURL"),
-                      !url.isEmpty else {
-                    return nil
+                let url = UserDefaults.standard.string(forKey: "openCodeWorkspaceURL") ?? ""
+                if url.isEmpty {
+                    // 无工作区 URL 时仅 Go API key 可查（无 key 返回 nil）
+                    return await OpenCodeService.shared.fetchUsageViaAPIKey()
                 }
                 return await OpenCodeService.shared.fetchUsage(urlString: url)
             }

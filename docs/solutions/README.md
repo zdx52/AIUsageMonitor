@@ -16,6 +16,7 @@
 | [openrouter-usage-integration.md](deployment/openrouter-usage-integration.md) | 架构模式 | OpenRouter 用量监控：/credits 余额 + Analytics API 当日花费（Management Key / UTC 日对齐 / 字段防御解析） |
 | [vol3-h1-parent-outline-parsing.md](workflow/vol3-h1-parent-outline-parsing.md) | Bug 排查 | 卷3 H1 父卷标注 + 全 H1 单元细纲文件不被 parse_outline 识别 → 父卷空壳 / 章节未分类 / 总览缺卡 |
 | [commandcode-usage-integration.md](deployment/commandcode-usage-integration.md) | 架构模式 | Command Code GOAT 用量监控：CLI /usage 同源的 /alpha/* 端点（whoami / billing/credits / subscriptions / usage/summary） |
+| [opencode-go-api-key-usage.md](deployment/opencode-go-api-key-usage.md) | 架构模式 | OpenCode GO 用量直查：Go API key 调 /zen/go/v1/usage（rolling/weekly/monthly），无 key 回退 cookie/RPC |
 | [aiusagemonitor-ui-usage-display-20260916.md](workflow/aiusagemonitor-ui-usage-display-20260916.md) | Bug 排查 | Command Code 月度额度布局遮挡 + Tavily 免费版 `plan_limit: null` 解码错误 + key 配置状态区分 |
 | [flask-web-in-swift-app.md](deployment/flask-web-in-swift-app.md) | 架构决策 | Flask web 集成进 Swift 菜单栏 app（路径依赖/venv/进程管理） |
 | [dock-window-presence.md](deployment/dock-window-presence.md) | 架构模式 | 菜单栏 app 窗口开→Dock 图标出现、全关→消失（activationPolicy 动态切换） |

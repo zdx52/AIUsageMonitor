@@ -127,6 +127,14 @@ cp -r .build/release/AIUsageMonitor AIUsageMonitor.app/Contents/MacOS/
 
 ## 更新内容
 
+### v1.11.0
+
+- 🔑 **OpenCode GO 支持 API Key 直查** — `GET /zen/go/v1/usage`（Bearer 鉴权）直接返回滚动/每周/每月用量百分比与重置时间，无需浏览器登录；未配置 Key 时回退原有 cookie/RPC 链路
+- 🎛️ **设置** — OpenCode GO 区新增 Go API Key 输入框（存 Keychain）
+- 🐛 **Bug 修复**
+  - **OpenCode 登录**：工作区 URL 为空/无效时不再弹出空白登录窗口，`showLoginWindow` 入口直接拒绝
+  - **Tavily**：修复 `planLimit` 改可选后遗留的单测编译错误
+
 ### v1.10.1
 
 - 🐛 **Bug 修复**

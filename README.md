@@ -17,7 +17,7 @@
   <img alt="License" src="https://img.shields.io/github/license/zdx52/AIUsageMonitor">
   <img alt="Swift" src="https://img.shields.io/badge/swift-5.0-orange">
   <img alt="macOS" src="https://img.shields.io/badge/platform-macOS-lightgray">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.10.1-blue">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.11.0-blue">
 </p>
 
 AIUsageMonitor is a lightweight macOS menu bar system monitor that displays real-time laptop temperature, CPU usage, AI service usage (DeepSeek / Tavily / MiniMax / OpenRouter / Command Code / OpenCode GO), and Hindsight memory stats. Supports auto-refresh and manual refresh.
@@ -130,6 +130,14 @@ cp -r .build/release/AIUsageMonitor AIUsageMonitor.app/Contents/MacOS/
 ```
 
 ## Changelog
+
+### v1.11.0
+
+- 🔑 **OpenCode GO via API key** — Direct usage lookup: `GET /zen/go/v1/usage` with a Go API key (Bearer) returns rolling/weekly/monthly usage percentages plus reset times, no browser login required. Falls back to the existing cookie/RPC flow when no key is set
+- 🎛️ **Settings** — Added a "Go API Key" field to the OpenCode GO section (stored in Keychain)
+- 🐛 **Bug fixes**
+  - **OpenCode login**: the login window no longer pops up blank when the workspace URL is empty/invalid — `showLoginWindow` now rejects bad URLs up front
+  - **Tavily**: fixed a pre-existing test compile error left over from making `planLimit` optional
 
 ### v1.10.1
 

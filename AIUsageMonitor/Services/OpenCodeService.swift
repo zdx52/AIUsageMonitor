@@ -24,8 +24,39 @@ class OpenCodeService: NSObject, NSWindowDelegate {
     }()
     
     // MARK: - 获取用量数据（入口）
-    
+
+    /// Go API key 直查（GET /zen/go/v1/usage，实测 2026-09-30 可用）；无 key 返回 nil，调用方回退 cookie/RPC。
+    func fetchUsageViaAPIKey() async -> OpenCodeUsage? {
+        guard let apiKey = KeychainHelper.get(key: "opencode_go_api_key"), !apiKey.isEmpty else {
+            return nil
+        }
+        guard let url = URL(string: "https://opencode.ai/zen/go/v1/usage") else { return nil }
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.timeoutInterval = 15
+        // ponytail: ephemeral 直连不走代理，若并发成瓶颈再复用共享 session
+        let config = URLSessionConfiguration.ephemeral
+        config.connectionProxyDictionary = [:]
+        do {
+            let (data, response) = try await URLSession(configuration: config).data(for: request)
+            if let http = response as? HTTPURLResponse, http.statusCode != 200 {
+                print("❌ OpenCode Go API HTTP \(http.statusCode): \(String(data: data, encoding: .utf8)?.prefix(200) ?? "no body")")
+                return nil
+            }
+            return (try? JSONDecoder().decode(OpenCodeGoUsageResponse.self, from: data))?.toOpenCodeUsage()
+        } catch {
+            print("❌ OpenCode Go API 请求失败: \(error.localizedDescription)")
+            return nil
+        }
+    }
+
     func fetchUsage(urlString: String) async -> OpenCodeUsage? {
+        if let viaKey = await fetchUsageViaAPIKey() {
+            print("✅ OpenCode Go API key 直查成功")
+            return viaKey
+        }
         let ocURL = URL(string: "https://opencode.ai")!
         let httpCookies = HTTPCookieStorage.shared.cookies(for: ocURL) ?? []
         var allCookies: [HTTPCookie] = httpCookies
@@ -398,6 +429,12 @@ class OpenCodeService: NSObject, NSWindowDelegate {
     // MARK: - WKWebView 登录（复用已初始化的 WKWebView，启动快）
     
     func showLoginWindow(urlString: String, completion: @escaping (Bool) -> Void) {
+        // 空/无效 URL 直接拒绝：否则面板弹出但 webView 无内容 = 空白窗口
+        guard let url = URL(string: urlString), url.scheme?.hasPrefix("http") == true else {
+            print("⚠️ OpenCode 登录：工作区 URL 为空或无效，请先在设置中填写")
+            completion(false)
+            return
+        }
         if let existing = loginPanel {
             existing.close()
             loginPanel = nil
@@ -444,10 +481,8 @@ class OpenCodeService: NSObject, NSWindowDelegate {
         NSApp.activate(ignoringOtherApps: true)
         panel.makeKeyAndOrderFront(nil)
         panel.orderFrontRegardless()
-        
-        if let url = URL(string: urlString) {
-            webView.load(URLRequest(url: url))
-        }
+
+        webView.load(URLRequest(url: url))
     }
     
     // MARK: - NSWindowDelegate

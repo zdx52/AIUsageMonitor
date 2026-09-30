@@ -32,6 +32,64 @@ enum OpenCodeStatus: Equatable {
     case success
 }
 
+// MARK: - Go API 用量响应（API key 直查，实测可用）
+//
+// 端点：GET https://opencode.ai/zen/go/v1/usage
+// 鉴权：Authorization: Bearer <Go API key>（console 订阅页复制）
+// 实测（2026-09-30）：无 key → 401 AuthError；有 key → 200，结构如下。
+// 注意：官方 docs 未公开此端点；Zen 按量余额无对应端点（GitHub #10448 仍 open）。
+struct OpenCodeGoUsageBucket: Codable {
+    let status: String?
+    let percent: Double?
+    let resetsAt: String?
+}
+
+struct OpenCodeGoUsageResponse: Codable {
+    let usage: OpenCodeGoUsageBuckets?
+
+    struct OpenCodeGoUsageBuckets: Codable {
+        let rolling: OpenCodeGoUsageBucket?
+        let weekly: OpenCodeGoUsageBucket?
+        let monthly: OpenCodeGoUsageBucket?
+    }
+
+    /// 映射到卡片业务模型（复用 rolling/weekly/monthly 三维度展示）。
+    func toOpenCodeUsage() -> OpenCodeUsage? {
+        guard let u = usage else { return nil }
+        var out = OpenCodeUsage(
+            rollingPercent: u.rolling?.percent,
+            rollingReset: Self.displayReset(u.rolling?.resetsAt),
+            weeklyPercent: u.weekly?.percent,
+            weeklyReset: Self.displayReset(u.weekly?.resetsAt),
+            monthlyPercent: u.monthly?.percent,
+            monthlyReset: Self.displayReset(u.monthly?.resetsAt)
+        )
+        if let iso = u.rolling?.resetsAt, let date = Self.parseISO(iso) {
+            out.rpcResetInSec = max(0, Int(date.timeIntervalSinceNow))
+        }
+        out.status = .success
+        guard out.rollingPercent != nil || out.weeklyPercent != nil || out.monthlyPercent != nil else {
+            return nil
+        }
+        return out
+    }
+
+    /// "2026-09-30T19:16:15.131Z" → "9月30日 19:16"（卡片"重置于"后接）。
+    private static func displayReset(_ iso: String?) -> String? {
+        guard let iso, let date = parseISO(iso) else { return nil }
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "zh_CN")
+        f.dateFormat = "M月d日 HH:mm"
+        return f.string(from: date)
+    }
+
+    private static func parseISO(_ iso: String) -> Date? {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return f.date(from: iso) ?? ISO8601DateFormatter().date(from: iso)
+    }
+}
+
 // MARK: - 业务数据模型
 
 struct OpenCodeUsage: Equatable {

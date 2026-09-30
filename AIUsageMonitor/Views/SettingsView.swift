@@ -26,6 +26,8 @@ struct SettingsView: View {
     @State private var showCommandCodeKey: Bool = false
     @State private var commandCodeKey: String = ""
     @State private var showOpenCode: Bool = true
+    @State private var openCodeGoKey: String = ""
+    @State private var showOpenCodeGoKey: Bool = false
     @State private var showHindsight: Bool = true
     
     var body: some View {
@@ -231,6 +233,23 @@ struct SettingsView: View {
                         
                         TextField("https://opencode.ai/workspace/.../go", text: $openCodeURL)
                             .textFieldStyle(.roundedBorder)
+
+                        Text("Go API Key（优先直查用量，免登录；console 订阅页复制）")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+
+                        HStack {
+                            if showOpenCodeGoKey {
+                                TextField("sk-...", text: $openCodeGoKey)
+                            } else {
+                                SecureField("sk-...", text: $openCodeGoKey)
+                            }
+
+                            Button(action: { showOpenCodeGoKey.toggle() }) {
+                                Image(systemName: showOpenCodeGoKey ? "eye.slash" : "eye")
+                            }
+                            .buttonStyle(.borderless)
+                        }
                         
                         VStack(alignment: .leading, spacing: 6) {
                             Text("💡 登录 OpenCode（使用 GitHub / Google 账号）：")
@@ -311,6 +330,7 @@ struct SettingsView: View {
         miniMaxSubscriptionKey = KeychainHelper.get(key: "minimax_subscription_key") ?? ""
         openRouterKey = KeychainHelper.get(key: "openrouter_management_key") ?? ""
         commandCodeKey = KeychainHelper.get(key: "commandcode_api_key") ?? ""
+        openCodeGoKey = KeychainHelper.get(key: "opencode_go_api_key") ?? ""
         openCodeURL = UserDefaults.standard.string(forKey: "openCodeWorkspaceURL") ?? ""
 
         if let interval = UserDefaults.standard.object(forKey: "refreshInterval") as? Double {
@@ -333,6 +353,7 @@ struct SettingsView: View {
         KeychainHelper.save(key: "minimax_subscription_key", value: miniMaxSubscriptionKey)
         KeychainHelper.save(key: "openrouter_management_key", value: openRouterKey)
         KeychainHelper.save(key: "commandcode_api_key", value: commandCodeKey)
+        KeychainHelper.save(key: "opencode_go_api_key", value: openCodeGoKey)
         UserDefaults.standard.set(openCodeURL, forKey: "openCodeWorkspaceURL")
         UserDefaults.standard.set(refreshInterval, forKey: "refreshInterval")
         UserDefaults.standard.set(showDeepSeek, forKey: "showDeepSeek")

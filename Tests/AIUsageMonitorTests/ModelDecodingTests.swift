@@ -81,7 +81,7 @@ final class ModelDecodingTests: XCTestCase {
         XCTAssertEqual(result.account.planUsage, 150)
         XCTAssertEqual(result.account.planLimit, 1000)
         
-        let remaining = max(0, result.account.planLimit - result.account.planUsage)
+        let remaining = max(0, (result.account.planLimit ?? 0) - (result.account.planUsage ?? 0))
         XCTAssertEqual(remaining, 850)
     }
     
@@ -260,5 +260,41 @@ final class ModelDecodingTests: XCTestCase {
 
         XCTAssertEqual(result.data.rows[0].day, "2026-08-20")
         XCTAssertEqual(result.data.rows[0].totalUsage, 2.5)
+    }
+
+    // MARK: - OpenCode Go API（GET /zen/go/v1/usage，实测 payload）
+
+    func testDecodeOpenCodeGoUsage() throws {
+        let json = """
+        {"usage":{"rolling":{"status":"ok","percent":12.5,"resetsAt":"2026-09-30T19:16:15.131Z"},"weekly":{"status":"ok","percent":30,"resetsAt":"2026-10-05T00:00:00.000Z"},"monthly":{"status":"ok","percent":45.5,"resetsAt":"2026-10-30T14:12:15.000Z"}}}
+        """
+        let data = json.data(using: .utf8)!
+        let result = try JSONDecoder().decode(OpenCodeGoUsageResponse.self, from: data)
+
+        XCTAssertEqual(result.usage?.rolling?.percent, 12.5)
+        XCTAssertEqual(result.usage?.weekly?.percent, 30)
+        XCTAssertEqual(result.usage?.monthly?.percent, 45.5)
+
+        let usage = try XCTUnwrap(result.toOpenCodeUsage())
+        XCTAssertEqual(usage.status, .success)
+        XCTAssertEqual(usage.rollingPercent, 12.5)
+        XCTAssertEqual(usage.weeklyPercent, 30)
+        XCTAssertEqual(usage.monthlyPercent, 45.5)
+        XCTAssertNotNil(usage.rollingReset)
+        XCTAssertNotNil(usage.rpcResetInSec)
+    }
+
+    func testOpenCodeGoUsageEmpty() {
+        // 空 usage → 映射返回 nil，调用方回退 cookie/RPC
+        let empty = OpenCodeGoUsageResponse(usage: nil)
+        XCTAssertNil(empty.toOpenCodeUsage())
+
+        let noPercents = OpenCodeGoUsageResponse(
+            usage: OpenCodeGoUsageResponse.OpenCodeGoUsageBuckets(
+                rolling: OpenCodeGoUsageBucket(status: "ok", percent: nil, resetsAt: nil),
+                weekly: nil, monthly: nil
+            )
+        )
+        XCTAssertNil(noPercents.toOpenCodeUsage())
     }
 }
