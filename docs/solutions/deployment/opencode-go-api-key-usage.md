@@ -41,7 +41,7 @@ AIUsageMonitor 的 OpenCode 卡原先走 cookie + `_server?id=<hash>` RPC + WebV
 - `resetsAt` 是 ISO8601（带毫秒），解析需 `ISO8601DateFormatter` + `.withFractionalSeconds`（Command Code 同款坑）。
 - Zen 按量余额**无**对应端点（GitHub `anomalyco/opencode#10448` 仍 open）；`#18648` 评论原话确认 Go plan 之前只能看网页 dashboard。
 - 集成策略：有 key 走直查（`URLSessionConfiguration.ephemeral` + `connectionProxyDictionary = [:]` 直连），无 key/失败回退原 cookie/RPC 链路。key 存 Keychain（`opencode_go_api_key`），与其它供应商同 pattern（见 `KeychainHelper`）。
-- 卡片映射：`percent` → rolling/weekly/monthlyPercent；`resetsAt` → "M月d日 HH:mm" 接"重置于"；rolling 的 `resetsAt-now` 秒数 → `rpcResetInSec`（倒计时复用）。
+- 卡片映射：`percent` → rolling/weekly/monthlyPercent；`resetsAt` → `*ResetAt: Date`，卡片渲染时经 `countdownText(from:)` 输出「X天X小时X分钟」（向上取整，避免 0分钟），比预烘字符串实时；rolling 的 `resetsAt-now` 秒数 → `rpcResetInSec`（倒计时复用）。
 - 反例教训：本轮曾因"文档无记载 + issue 喊没接口"误判为不支持；**未公开 ≠ 不存在，候选端点逐个 curl 实测才算数**。
 
 ## AIUsageMonitor 接线位置

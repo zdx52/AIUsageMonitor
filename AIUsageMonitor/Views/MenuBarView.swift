@@ -250,7 +250,7 @@ struct MenuBarView: View {
                                 if let oc = dataStore.openCodeUsage {
                                     if let rolling = oc.rollingPercent {
                                         UsageProgressRow(label: "滚动用量", percentage: rolling)
-                                        if let reset = oc.rollingReset {
+                                        if let reset = oc.rollingResetText {
                                             Text("重置于 \(reset)")
                                                 .font(.caption2)
                                                 .foregroundStyle(.tertiary)
@@ -259,7 +259,7 @@ struct MenuBarView: View {
 
                                     if let weekly = oc.weeklyPercent {
                                         UsageProgressRow(label: "每周用量", percentage: weekly)
-                                        if let reset = oc.weeklyReset {
+                                        if let reset = oc.weeklyResetText {
                                             Text("重置于 \(reset)")
                                                 .font(.caption2)
                                                 .foregroundStyle(.tertiary)
@@ -268,7 +268,7 @@ struct MenuBarView: View {
 
                                     if let monthly = oc.monthlyPercent {
                                         UsageProgressRow(label: "每月用量", percentage: monthly)
-                                        if let reset = oc.monthlyReset {
+                                        if let reset = oc.monthlyResetText {
                                             Text("重置于 \(reset)")
                                                 .font(.caption2)
                                                 .foregroundStyle(.tertiary)
@@ -663,7 +663,7 @@ func countdownText(from date: Date) -> String {
     let days = seconds / 86400
     let hours = (seconds % 86400) / 3600
     let minutes = (seconds % 3600 + 59) / 60
-    if days > 0 { return "\(days)天\(hours)小时" }
+    if days > 0 { return "\(days)天\(hours)小时\(minutes)分钟" }
     if hours > 0 { return "\(hours)小时\(minutes)分钟" }
     return "\(max(minutes, 1))分钟"
 }

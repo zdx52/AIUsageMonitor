@@ -54,17 +54,18 @@ struct OpenCodeGoUsageResponse: Codable {
     }
 
     /// 映射到卡片业务模型（复用 rolling/weekly/monthly 三维度展示）。
+    /// resetsAt 存成 Date，卡片渲染时算「天/小时/分钟」倒计时（每次重绘都刷新）。
     func toOpenCodeUsage() -> OpenCodeUsage? {
         guard let u = usage else { return nil }
         var out = OpenCodeUsage(
             rollingPercent: u.rolling?.percent,
-            rollingReset: Self.displayReset(u.rolling?.resetsAt),
+            rollingResetAt: Self.parseISO(u.rolling?.resetsAt),
             weeklyPercent: u.weekly?.percent,
-            weeklyReset: Self.displayReset(u.weekly?.resetsAt),
+            weeklyResetAt: Self.parseISO(u.weekly?.resetsAt),
             monthlyPercent: u.monthly?.percent,
-            monthlyReset: Self.displayReset(u.monthly?.resetsAt)
+            monthlyResetAt: Self.parseISO(u.monthly?.resetsAt)
         )
-        if let iso = u.rolling?.resetsAt, let date = Self.parseISO(iso) {
+        if let date = out.rollingResetAt {
             out.rpcResetInSec = max(0, Int(date.timeIntervalSinceNow))
         }
         out.status = .success
@@ -74,16 +75,9 @@ struct OpenCodeGoUsageResponse: Codable {
         return out
     }
 
-    /// "2026-09-30T19:16:15.131Z" → "9月30日 19:16"（卡片"重置于"后接）。
-    private static func displayReset(_ iso: String?) -> String? {
-        guard let iso, let date = parseISO(iso) else { return nil }
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "zh_CN")
-        f.dateFormat = "M月d日 HH:mm"
-        return f.string(from: date)
-    }
-
-    private static func parseISO(_ iso: String) -> Date? {
+    /// "2026-09-30T19:16:15.131Z" → Date（带毫秒需 withFractionalSeconds）。
+    private static func parseISO(_ iso: String?) -> Date? {
+        guard let iso else { return nil }
         let f = ISO8601DateFormatter()
         f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         return f.date(from: iso) ?? ISO8601DateFormatter().date(from: iso)
@@ -109,19 +103,32 @@ struct OpenCodeUsage: Equatable {
     
     // 三种用量
     var rollingPercent: Double?    // 滚动用量
-    var rollingReset: String?      // 滚动重置时间
+    var rollingResetAt: Date?      // 滚动重置时刻（渲染时算倒计时）
+    var rollingReset: String?      // 滚动重置文案（页面抓取回退）
     var weeklyPercent: Double?     // 每周用量
-    var weeklyReset: String?       // 每周重置时间
+    var weeklyResetAt: Date?       // 每周重置时刻
+    var weeklyReset: String?       // 每周重置文案（页面抓取回退）
     var monthlyPercent: Double?    // 每月用量
-    var monthlyReset: String?      // 每月重置时间
-    
+    var monthlyResetAt: Date?      // 每月重置时刻
+    var monthlyReset: String?      // 每月重置文案（页面抓取回退）
+
+    /// 卡片「重置于」文案：有时刻走实时倒计时（天/小时/分钟），否则用抓取原文。
+    var rollingResetText: String? { Self.resetText(rollingResetAt, rollingReset) }
+    var weeklyResetText: String? { Self.resetText(weeklyResetAt, weeklyReset) }
+    var monthlyResetText: String? { Self.resetText(monthlyResetAt, monthlyReset) }
+
+    private static func resetText(_ date: Date?, _ fallback: String?) -> String? {
+        guard let date else { return fallback }
+        return countdownText(from: date)
+    }
+
     init(usagePercentages: [Int] = [], bodyText: String = "", useBalance: Bool = false, needsLogin: Bool = false,
          status: OpenCodeStatus = .success,
          rpcUsagePercent: Double? = nil, rpcResetInSec: Int? = nil, rpcPlan: String? = nil,
          rpcTotalUsed: Int? = nil, rpcTotalLimit: Int? = nil, rpcRemaining: Int? = nil,
-         rollingPercent: Double? = nil, rollingReset: String? = nil,
-         weeklyPercent: Double? = nil, weeklyReset: String? = nil,
-         monthlyPercent: Double? = nil, monthlyReset: String? = nil) {
+         rollingPercent: Double? = nil, rollingReset: String? = nil, rollingResetAt: Date? = nil,
+         weeklyPercent: Double? = nil, weeklyReset: String? = nil, weeklyResetAt: Date? = nil,
+         monthlyPercent: Double? = nil, monthlyReset: String? = nil, monthlyResetAt: Date? = nil) {
         self.usagePercentages = usagePercentages
         self.bodyText = bodyText
         self.useBalance = useBalance
@@ -135,9 +142,12 @@ struct OpenCodeUsage: Equatable {
         self.rpcRemaining = rpcRemaining
         self.rollingPercent = rollingPercent
         self.rollingReset = rollingReset
+        self.rollingResetAt = rollingResetAt
         self.weeklyPercent = weeklyPercent
         self.weeklyReset = weeklyReset
+        self.weeklyResetAt = weeklyResetAt
         self.monthlyPercent = monthlyPercent
         self.monthlyReset = monthlyReset
+        self.monthlyResetAt = monthlyResetAt
     }
 }

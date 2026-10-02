@@ -17,7 +17,7 @@
   <img alt="License" src="https://img.shields.io/github/license/zdx52/AIUsageMonitor">
   <img alt="Swift" src="https://img.shields.io/badge/swift-5.0-orange">
   <img alt="macOS" src="https://img.shields.io/badge/platform-macOS-lightgray">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.11.1-blue">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.12.0-blue">
 </p>
 
 AIUsageMonitor is a lightweight macOS menu bar system monitor that displays real-time laptop temperature, CPU usage, AI service usage (DeepSeek / Tavily / MiniMax / OpenRouter / Command Code / OpenCode GO), and Hindsight memory stats. Supports auto-refresh and manual refresh.
@@ -130,6 +130,11 @@ cp -r .build/release/AIUsageMonitor AIUsageMonitor.app/Contents/MacOS/
 ```
 
 ## Changelog
+
+### v1.12.0
+
+- ⏱️ **OpenCode GO reset countdown** — The "重置于" line now shows a live countdown (`3天5小时20分钟` / `5小时20分钟` / `20分钟`) instead of an absolute date (`9月30日 19:16`), matching the official dashboard's wording. `resetsAt` is kept as a `Date` and formatted at render time, so it ticks while the popover is open; the cookie/scraped page text is still used as a fallback
+- 🔁 **Command Code** — Day-scale countdowns now include minutes too (`1天2小时3分钟` instead of `1天2小时`)
 
 ### v1.11.1
 

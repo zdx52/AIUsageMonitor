@@ -280,8 +280,21 @@ final class ModelDecodingTests: XCTestCase {
         XCTAssertEqual(usage.rollingPercent, 12.5)
         XCTAssertEqual(usage.weeklyPercent, 30)
         XCTAssertEqual(usage.monthlyPercent, 45.5)
-        XCTAssertNotNil(usage.rollingReset)
+        // API 路径存 resetsAt 时刻，卡片渲染时算「天/小时/分钟」倒计时
+        XCTAssertNotNil(usage.rollingResetAt)
+        XCTAssertNotNil(usage.rollingResetText)
+        XCTAssertNil(usage.rollingReset)
         XCTAssertNotNil(usage.rpcResetInSec)
+    }
+
+    // MARK: - 倒计时文案（天/小时/分钟）
+
+    func testCountdownTextFormat() {
+        XCTAssertTrue(countdownText(from: Date().addingTimeInterval(86400 + 2 * 3600 + 3 * 60 + 30)).hasPrefix("1天2小时"))
+        XCTAssertTrue(countdownText(from: Date().addingTimeInterval(3 * 3600 + 20 * 60)).hasPrefix("3小时20分钟"))
+        XCTAssertEqual(countdownText(from: Date().addingTimeInterval(30)), "1分钟")
+        // 抓取路径回退：无时刻时用页面原文
+        XCTAssertEqual(OpenCodeUsage(weeklyReset: "5天3小时").weeklyResetText, "5天3小时")
     }
 
     func testOpenCodeGoUsageEmpty() {

@@ -13,7 +13,7 @@
   <img alt="License" src="https://img.shields.io/github/license/zdx52/AIUsageMonitor">
   <img alt="Swift" src="https://img.shields.io/badge/swift-5.0-orange">
   <img alt="macOS" src="https://img.shields.io/badge/platform-macOS-lightgray">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.9.0-blue">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.12.0-blue">
 </p>
 
 AIUsageMonitor 是一个 macOS 菜单栏轻量级系统监控工具，实时显示笔记本温度、CPU 使用率、AI 用量（DeepSeek / Tavily / MiniMax / OpenRouter / Command Code / OpenCode GO）和 Hindsight 记忆状态。支持自动刷新和手动刷新。
@@ -126,6 +126,11 @@ cp -r .build/release/AIUsageMonitor AIUsageMonitor.app/Contents/MacOS/
 ```
 
 ## 更新内容
+
+### v1.12.0
+
+- ⏱️ **OpenCode GO 重置时间改为实时倒计时** — 「重置于」不再显示绝对日期（9月30日 19:16），改为官网同款的「X天X小时X分钟」，`resetsAt` 存为 `Date` 在渲染时计算，弹窗打开期间持续走秒；无 API Key 的抓取链路仍回退页面原文
+- 🔁 **Command Code** — 天级倒计时补上分钟（`1天2小时3分钟`，原为 `1天2小时`）
 
 ### v1.11.1
 
