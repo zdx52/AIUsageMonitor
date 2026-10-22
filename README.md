@@ -17,7 +17,7 @@
   <img alt="License" src="https://img.shields.io/github/license/zdx52/AIUsageMonitor">
   <img alt="Swift" src="https://img.shields.io/badge/swift-5.0-orange">
   <img alt="macOS" src="https://img.shields.io/badge/platform-macOS-lightgray">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.12.0-blue">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.13.0-blue">
 </p>
 
 AIUsageMonitor is a lightweight macOS menu bar system monitor that displays real-time laptop temperature, CPU usage, AI service usage (DeepSeek / Tavily / MiniMax / OpenRouter / Command Code / OpenCode GO / Open Design AMR), and Hindsight memory stats. Supports auto-refresh and manual refresh.
@@ -132,7 +132,7 @@ cp -r .build/release/AIUsageMonitor AIUsageMonitor.app/Contents/MacOS/
 
 ## Changelog
 
-### Unreleased
+### v1.13.0
 
 - 🧩 **Open Design (AMR) usage card** — New menu bar card showing the Coding Plan tier, 5-hour and weekly rolling windows (used % with reset countdowns), and wallet balance. The AMR API key cannot read usage (`/v1/usage`, `/v1/me`, `/v1/credits` all return 404 — upstream issue #8674), so this reads the account-side `vela billing preflight --workspace-id … --format json` shipped inside the local Open Design app. `vela` path is discovered by scanning the versioned app directories, the workspace id is auto-detected from the app log, and both can be overridden in Settings
 - 🎛️ **Settings** — Added an "Open Design (AMR) 用量" toggle and an optional workspace id field
