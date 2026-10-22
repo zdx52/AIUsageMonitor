@@ -8,6 +8,7 @@ struct DouyinDownloadView: View {
     @State private var status = "把作品链接或分享文案整条粘进来"
     @State private var busy = false
     @State private var history: [String] = []
+    @FocusState private var linkFocused: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -17,6 +18,7 @@ struct DouyinDownloadView: View {
             TextField("https://www.douyin.com/video/… 或 v.douyin.com 短链 或分享文案", text: $link)
                 .textFieldStyle(.roundedBorder)
                 .disabled(busy)
+                .focused($linkFocused)
                 .onSubmit(start)
                 .font(.system(size: 12, design: .monospaced))
 
@@ -62,6 +64,10 @@ struct DouyinDownloadView: View {
         }
         .padding(20)
         .frame(width: 460)
+        .onAppear {
+            // 窗口打开就把光标放进输入框，⌘V 直接可用
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { linkFocused = true }
+        }
     }
 
     private func start() {

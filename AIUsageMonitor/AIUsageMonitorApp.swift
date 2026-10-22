@@ -193,7 +193,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         false
     }
     
-    /// 设置 .regular 状态下的最小菜单栏（App 菜单 + 窗口菜单）
+    /// 设置 .regular 状态下的最小菜单栏（App 菜单 + 编辑菜单 + 窗口菜单）
     private func setupMainMenu() {
         let mainMenu = NSMenu()
         
@@ -204,6 +204,20 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         appMenu.addItem(.separator())
         appMenu.addItem(withTitle: "退出 AIUsageMonitor", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         appItem.submenu = appMenu
+        
+        // 编辑菜单：AppKit 的 ⌘V / ⌘C / ⌘A 是走菜单项的 keyEquivalent 的，
+        // 没有这个菜单，输入框里按 ⌘V 什么都不会发生（只能右键粘贴）。
+        let editItem = NSMenuItem()
+        mainMenu.addItem(editItem)
+        let editMenu = NSMenu(title: "编辑")
+        editMenu.addItem(withTitle: "撤销", action: Selector(("undo:")), keyEquivalent: "z")
+        editMenu.addItem(withTitle: "重做", action: Selector(("redo:")), keyEquivalent: "Z")
+        editMenu.addItem(.separator())
+        editMenu.addItem(withTitle: "剪切", action: #selector(NSText.cut(_:)), keyEquivalent: "x")
+        editMenu.addItem(withTitle: "拷贝", action: #selector(NSText.copy(_:)), keyEquivalent: "c")
+        editMenu.addItem(withTitle: "粘贴", action: #selector(NSText.paste(_:)), keyEquivalent: "v")
+        editMenu.addItem(withTitle: "全选", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
+        editItem.submenu = editMenu
         
         let windowItem = NSMenuItem()
         mainMenu.addItem(windowItem)
