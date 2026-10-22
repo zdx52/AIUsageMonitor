@@ -180,7 +180,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func updateDockPresence() {
         let dashboardVisible = DashboardWindowController.shared.window?.isVisible ?? false
         let novelVisible = NovelWebWindowController.shared.window?.isVisible ?? false
-        let target: NSApplication.ActivationPolicy = (dashboardVisible || novelVisible) ? .regular : .accessory
+        let douyinVisible = DouyinWindowController.shared.window?.isVisible ?? false
+        let target: NSApplication.ActivationPolicy = (dashboardVisible || novelVisible || douyinVisible) ? .regular : .accessory
         if NSApp.activationPolicy() != target {
             NSApp.setActivationPolicy(target)
             print("🖥️ Dock 呈现切换: \(target == .regular ? "显示图标" : "隐藏图标")")

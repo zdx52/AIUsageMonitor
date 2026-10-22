@@ -6,6 +6,12 @@ import AppKit
 // NSApplication.delegate 是 weak，必须用全局变量持有 delegate。
 private var appDelegate: AppDelegate?
 
+// 自检入口：--douyin-selfcheck <链接> 跑一遍抖音下载全流程后退出（验证解析链路没坏）
+let arguments = CommandLine.arguments
+if let index = arguments.firstIndex(of: "--douyin-selfcheck"), index + 1 < arguments.count {
+    DouyinDownloader.runSelfCheck(link: arguments[index + 1])
+}
+
 MainActor.assumeIsolated {
     let app = NSApplication.shared
     appDelegate = AppDelegate()

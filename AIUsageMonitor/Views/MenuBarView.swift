@@ -556,6 +556,18 @@ struct MenuBarView: View {
                 Spacer()
                 
                 Button(action: {
+                    NotificationCenter.default.post(name: .closePopoverForPanel, object: nil)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                        DouyinWindowController.shared.show()
+                    }
+                }) {
+                    Label("抖音", systemImage: "arrow.down.circle")
+                        .font(.caption)
+                }
+                
+                Spacer()
+                
+                Button(action: {
                     NSApplication.shared.terminate(nil)
                 }) {
                     Label("退出", systemImage: "power")
