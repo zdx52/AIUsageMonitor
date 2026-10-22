@@ -77,6 +77,7 @@ After installation:
 - ✨ **MiniMax Token Plan** — China subscription usage (5h + weekly windows per model family, with countdown reset)
 - 🔄 **OpenCode GO** — RPC usage % with WKWebView login & browser fallback
 - 🧩 **Open Design (AMR)** — Coding Plan 5h / weekly rolling windows (used %) with reset countdowns + wallet balance, read from the locally installed Open Design `vela` CLI (no API key)
+- ⬇️ **Douyin Downloader** — Paste a Douyin video link (page URL, `modal_id` profile link, short link, or share text) and save the highest source — usually 4K, which the web player never hands out — straight into `~/Downloads`. A hidden WKWebView captures the page's own signed API response, so no signature reverse-engineering; endpoint/JSON drift is tolerated and it falls back to the player stream when the API gives nothing
 - 🧠 **Hindsight Dashboard** — Opens native Hindsight Control Plane (port 9999) with official web UI for memory banks, recall, and entity exploration
 - 🌐 **Network Speed** — Real-time ↓↑ network speed, 3s refresh
 - 🟢 **Health Indicator** — Color-coded: default/orange/red for health status
@@ -131,6 +132,12 @@ cp -r .build/release/AIUsageMonitor AIUsageMonitor.app/Contents/MacOS/
 ```
 
 ## Changelog
+
+### v1.13.1
+
+- ⬇️ **Douyin Downloader** — New menu bar entry (between 小说 and 退出). Paste a video link and the highest source lands in `~/Downloads` — usually 2160×3840, which the web player never exposes to logged-out visitors. Extraction hooks the page's own `/aweme/detail` response inside a hidden `WKWebView`, so the platform's signature is computed by the platform itself
+- 🛡️ **Drift tolerance** — Matching is by response content (`"play_addr"`), not endpoint path; parsing walks the whole JSON tree instead of `video.bit_rate[]` and locks onto the requested `aweme_id`; a 25s timeout falls back to the player's current stream (lower quality, still downloads) instead of failing
+- 🔧 **Fixed** — v1.13.0 was built from a commit that did not contain these files, so the button vanished from the shipped app; the feature is now committed and versioned together
 
 ### v1.13.0
 
