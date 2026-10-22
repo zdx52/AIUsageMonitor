@@ -13,7 +13,7 @@
   <img alt="License" src="https://img.shields.io/github/license/zdx52/AIUsageMonitor">
   <img alt="Swift" src="https://img.shields.io/badge/swift-5.0-orange">
   <img alt="macOS" src="https://img.shields.io/badge/platform-macOS-lightgray">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.13.2-blue">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.13.3-blue">
 </p>
 
 AIUsageMonitor 是一个 macOS 菜单栏轻量级系统监控工具，实时显示笔记本温度、CPU 使用率、AI 用量（DeepSeek / Tavily / MiniMax / OpenRouter / Command Code / OpenCode GO / Open Design AMR）和 Hindsight 记忆状态。支持自动刷新和手动刷新。
@@ -128,6 +128,10 @@ cp -r .build/release/AIUsageMonitor AIUsageMonitor.app/Contents/MacOS/
 ```
 
 ## 更新内容
+
+### v1.13.3
+
+- 🔁 **Open Design (AMR) 卡片不再空白** — 上游 `amr-api.open-design.ai` 的账单接口偶发断连（`EOF`，实测约 7% 请求失败），原来一次失败就把卡片刷成「暂无数据」，要等下一轮刷新才恢复。现在读取会重试最多 3 次（间隔 0.5 秒），并且 `DataStore` 保留上次成功快照：真失败时显示旧数字 + 「⚠️ 本次读取失败，显示上次数据」，不再空白
 
 ### v1.13.2
 

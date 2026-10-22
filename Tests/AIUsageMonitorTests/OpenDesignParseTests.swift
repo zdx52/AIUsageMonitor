@@ -53,4 +53,33 @@ final class OpenDesignParseTests: XCTestCase {
         XCTAssertFalse(usage!.windows.isEmpty)
         XCTAssertTrue((0...100).contains(usage!.maxUsedPercent))
     }
+
+    /// 上游偶发 EOF：前两次失败、第三次成功必须重试拿到数据。
+    func testRetriesUntilSuccess() async throws {
+        guard OpenDesignService.velaPath() != nil else {
+            throw XCTSkip("本机未安装 Open Design")
+        }
+        var calls = 0
+        let usage = await OpenDesignService.fetchUsage(attempts: 3) { _, _ in
+            calls += 1
+            return calls < 3 ? nil : self.sample
+        }
+        XCTAssertEqual(calls, 3)
+        XCTAssertNotNil(usage)
+        XCTAssertEqual(usage?.windows.count, 2)
+    }
+
+    /// 全失败时正好试满 attempts 次并返回 nil（交给上层保留旧数据）。
+    func testGivesUpAfterAttempts() async throws {
+        guard OpenDesignService.velaPath() != nil else {
+            throw XCTSkip("本机未安装 Open Design")
+        }
+        var calls = 0
+        let usage = await OpenDesignService.fetchUsage(attempts: 2) { _, _ in
+            calls += 1
+            return nil
+        }
+        XCTAssertEqual(calls, 2)
+        XCTAssertNil(usage)
+    }
 }

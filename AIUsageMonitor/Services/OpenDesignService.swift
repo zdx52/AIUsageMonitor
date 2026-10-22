@@ -44,7 +44,8 @@ enum OpenDesignService {
 
     // MARK: - 获取
 
-    static func fetchUsage() async -> OpenDesignUsage? {
+    static func fetchUsage(attempts: Int = 3,
+                           run: @escaping (String, String) async -> Data? = OpenDesignService.runVela) async -> OpenDesignUsage? {
         guard let vela = velaPath() else {
             NSLog("⚠️ Open Design: 未找到 vela（App 未安装？）")
             return nil
@@ -53,15 +54,20 @@ enum OpenDesignService {
             NSLog("⚠️ Open Design: 未找到 workspace id，请在设置里填写")
             return nil
         }
-        guard let data = await runVela(vela, workspace: workspace) else { return nil }
-        let usage = OpenDesignUsage.from(preflight: data)
-        if usage == nil {
-            NSLog("❌ Open Design: preflight 输出无法解析（vela 未登录？）")
+        // 上游 amr-api 偶发 EOF（实测约 7% 请求失败），单次失败就重试，别让卡片空白
+        for attempt in 1...max(1, attempts) {
+            if let data = await run(vela, workspace), let usage = OpenDesignUsage.from(preflight: data) {
+                return usage
+            }
+            NSLog("⚠️ Open Design: 第 \(attempt) 次读取失败")
+            if attempt < attempts {
+                try? await Task.sleep(nanoseconds: 500_000_000)
+            }
         }
-        return usage
+        return nil
     }
 
-    private static func runVela(_ path: String, workspace: String) async -> Data? {
+    static func runVela(_ path: String, workspace: String) async -> Data? {
         await withCheckedContinuation { continuation in
             DispatchQueue.global(qos: .utility).async {
                 let process = Process()

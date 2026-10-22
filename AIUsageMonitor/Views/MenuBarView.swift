@@ -381,6 +381,11 @@ struct MenuBarView: View {
                                 if let balance = od.balanceUsd {
                                     UsageRow(label: "钱包余额", value: String(format: "$%.2f", balance))
                                 }
+                                if dataStore.openDesignStale {
+                                    Text("⚠️ 本次读取失败，显示上次数据")
+                                        .font(.caption2)
+                                        .foregroundStyle(.orange)
+                                }
                             } else {
                                 Text("暂无数据")
                                     .foregroundStyle(.secondary)

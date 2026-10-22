@@ -17,7 +17,7 @@
   <img alt="License" src="https://img.shields.io/github/license/zdx52/AIUsageMonitor">
   <img alt="Swift" src="https://img.shields.io/badge/swift-5.0-orange">
   <img alt="macOS" src="https://img.shields.io/badge/platform-macOS-lightgray">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.13.2-blue">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.13.3-blue">
 </p>
 
 AIUsageMonitor is a lightweight macOS menu bar system monitor that displays real-time laptop temperature, CPU usage, AI service usage (DeepSeek / Tavily / MiniMax / OpenRouter / Command Code / OpenCode GO / Open Design AMR), and Hindsight memory stats. Supports auto-refresh and manual refresh.
@@ -132,6 +132,10 @@ cp -r .build/release/AIUsageMonitor AIUsageMonitor.app/Contents/MacOS/
 ```
 
 ## Changelog
+
+### v1.13.3
+
+- 🔁 **Open Design (AMR) card no longer blanks out** — The upstream `amr-api.open-design.ai` billing endpoint intermittently drops the connection (`EOF`, measured ~7% of calls), and a single failure used to wipe the card to "暂无数据" until the next refresh. Usage fetch now retries up to 3 times (0.5s apart), and `DataStore` keeps the last successful snapshot so a failure shows the previous numbers plus "⚠️ 本次读取失败，显示上次数据" instead of an empty card
 
 ### v1.13.2
 

@@ -55,6 +55,8 @@ class DataStore: ObservableObject {
     @Published var openRouterUsage: OpenRouterUsage?
     @Published var commandCodeUsage: CommandCodeUsage?
     @Published var openDesignUsage: OpenDesignUsage?
+    @Published var openDesignStale = false
+    private var lastSuccessfulOpenDesign: OpenDesignUsage?
     @Published var openCodeUsage: OpenCodeUsage?
     @Published var openCodeNeedsLogin: Bool = false
     @Published var openCodeStatus: OpenCodeStatus = .notConfigured
@@ -158,8 +160,18 @@ class DataStore: ObservableObject {
         // Command Code 用量
         self.commandCodeUsage = commandCodeData
 
-        // Open Design AMR（vela billing preflight）
-        self.openDesignUsage = openDesignData
+        // Open Design AMR（vela billing preflight）— 单次失败保留上次成功数据，不显示「暂无数据」
+        if let od = openDesignData {
+            self.openDesignUsage = od
+            self.lastSuccessfulOpenDesign = od
+            self.openDesignStale = false
+        } else if let cached = lastSuccessfulOpenDesign {
+            self.openDesignUsage = cached
+            self.openDesignStale = true
+        } else {
+            self.openDesignUsage = nil
+            self.openDesignStale = false
+        }
         
         self.lastRefreshTime = Date()
         let interval = UserDefaults.standard.object(forKey: "refreshInterval") as? Double ?? 300
