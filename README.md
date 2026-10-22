@@ -133,6 +133,11 @@ cp -r .build/release/AIUsageMonitor AIUsageMonitor.app/Contents/MacOS/
 
 ## Changelog
 
+### v1.13.2
+
+- ⌨️ **Edit menu** — The app had no 编辑 menu at all, and macOS routes ⌘V / ⌘C / ⌘A / ⌘Z through menu key equivalents, so pasting a link only worked via right-click → Paste (same for API key fields in Settings). Added the standard Edit menu; those shortcuts now work app-wide
+- 🎯 **Auto-focus** — The Douyin window puts the caret in the link field on open, so ⌘V works immediately without clicking the field first
+
 ### v1.13.1
 
 - ⬇️ **Douyin Downloader** — New menu bar entry (between 小说 and 退出). Paste a video link and the highest source lands in `~/Downloads` — usually 2160×3840, which the web player never exposes to logged-out visitors. Extraction hooks the page's own `/aweme/detail` response inside a hidden `WKWebView`, so the platform's signature is computed by the platform itself
