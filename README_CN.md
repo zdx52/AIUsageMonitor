@@ -16,7 +16,7 @@
   <img alt="Version" src="https://img.shields.io/badge/version-1.12.0-blue">
 </p>
 
-AIUsageMonitor 是一个 macOS 菜单栏轻量级系统监控工具，实时显示笔记本温度、CPU 使用率、AI 用量（DeepSeek / Tavily / MiniMax / OpenRouter / Command Code / OpenCode GO）和 Hindsight 记忆状态。支持自动刷新和手动刷新。
+AIUsageMonitor 是一个 macOS 菜单栏轻量级系统监控工具，实时显示笔记本温度、CPU 使用率、AI 用量（DeepSeek / Tavily / MiniMax / OpenRouter / Command Code / OpenCode GO / Open Design AMR）和 Hindsight 记忆状态。支持自动刷新和手动刷新。
 
 ## 前置依赖
 
@@ -72,6 +72,7 @@ Control Plane 默认运行在 9999 端口，AIUsageMonitor 的原生看板窗口
 - 🌐 **OpenRouter 用量监控** — 账户充值/已用/剩余余额（`/api/v1/credits`）+ 当日花费（beta Analytics API，按天分组）。需在设置中配置 Management Key
 - ✨ **MiniMax Token Plan** — 中国区订阅用量卡片，每个模型族（general / video）显示 5h 滚动窗口 + 周窗口进度条（已用量百分比），底部倒计时「重置于 X 小时之后」
 - 🔄 **OpenCode GO 用量监控** — RPC 查询用量百分比，支持 WKWebView 内嵌登录与浏览器备选
+- 🧩 **Open Design (AMR) 用量监控** — Coding Plan 的 5h / 周滚动窗口已用百分比 + 重置倒计时 + 钱包余额，读本机 Open Design 自带的 `vela` CLI，不需要 API Key
 - 🧠 **Hindsight 原生看板** — 点击「看板」打开官方 Hindsight Control Plane（端口 9999），完整浏览记忆银行、搜索和实体关系
 - 🌐 **菜单栏网速显示** — 实时显示 `↓下载 ↑上传`，3 秒刷新
 - 🟢 **动态健康提示** — 文字颜色标示：健康默认色/预警橙色/严重红色
@@ -126,6 +127,11 @@ cp -r .build/release/AIUsageMonitor AIUsageMonitor.app/Contents/MacOS/
 ```
 
 ## 更新内容
+
+### 未发布
+
+- 🧩 **Open Design (AMR) 用量卡片** — 显示 Coding Plan 档位、5 小时与每周滚动窗口已用百分比（带重置倒计时）、钱包余额。AMR 的 API Key 读不到用量（`/v1/usage`、`/v1/me`、`/v1/credits` 实测全 404，上游 issue #8674 待实现），因此改走账号侧：调本机 Open Design 自带的 `vela billing preflight --workspace-id … --format json`。`vela` 路径按版本目录扫描自动定位，workspace id 从 App 日志自动探测，两者都能在设置里手填覆盖
+- 🎛️ **设置** — 新增「Open Design (AMR) 用量」开关与可选的工作区 ID 输入框
 
 ### v1.12.0
 

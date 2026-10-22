@@ -29,6 +29,8 @@ struct SettingsView: View {
     @State private var openCodeGoKey: String = ""
     @State private var showOpenCodeGoKey: Bool = false
     @State private var showHindsight: Bool = true
+    @State private var showOpenDesign: Bool = true
+    @State private var openDesignWorkspaceId: String = ""
     
     var body: some View {
         ScrollView {
@@ -69,6 +71,7 @@ struct SettingsView: View {
                         Toggle("MiniMax Token Plan", isOn: $showMiniMax)
                         Toggle("OpenRouter 用量", isOn: $showOpenRouter)
                         Toggle("Command Code 用量", isOn: $showCommandCode)
+                        Toggle("Open Design (AMR) 用量", isOn: $showOpenDesign)
                         Toggle("OpenCode GO 用量", isOn: $showOpenCode)
                         Toggle("Hindsight 记忆", isOn: $showHindsight)
                     }
@@ -183,6 +186,27 @@ struct SettingsView: View {
                             .foregroundColor(.secondary)
 
                         Text("⚠️ 同一把 key 同时用于 CLI / Provider API / 用量查询")
+                            .font(.caption2)
+                            .foregroundColor(.orange)
+                    }
+                    .padding(.vertical, 4)
+                }
+
+                // Open Design (AMR) 设置
+                GroupBox("🧩 Open Design (AMR)") {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("不需要 API Key：读本机 Open Design 自带 vela CLI 的已登录会话")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+
+                        Text("工作区 ID（留空自动从 App 日志探测）")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+
+                        TextField("ebovu8r07cuh4ekwtceqtgx2", text: $openDesignWorkspaceId)
+                            .textFieldStyle(.roundedBorder)
+
+                        Text("⚠️ amr-link 的 API key 读不到余量（/v1/usage 等全 404），只支持装了并登录 Open Design 的本机")
                             .font(.caption2)
                             .foregroundColor(.orange)
                     }
@@ -345,6 +369,8 @@ struct SettingsView: View {
         showCommandCode = UserDefaults.standard.object(forKey: "showCommandCode") as? Bool ?? true
         showOpenCode = UserDefaults.standard.object(forKey: "showOpenCode") as? Bool ?? true
         showHindsight = UserDefaults.standard.object(forKey: "showHindsight") as? Bool ?? true
+        showOpenDesign = UserDefaults.standard.object(forKey: "showOpenDesign") as? Bool ?? true
+        openDesignWorkspaceId = UserDefaults.standard.string(forKey: "openDesignWorkspaceId") ?? ""
     }
 
     private func saveSettings() {
@@ -364,6 +390,8 @@ struct SettingsView: View {
         UserDefaults.standard.set(showCommandCode, forKey: "showCommandCode")
         UserDefaults.standard.set(showOpenCode, forKey: "showOpenCode")
         UserDefaults.standard.set(showHindsight, forKey: "showHindsight")
+        UserDefaults.standard.set(showOpenDesign, forKey: "showOpenDesign")
+        UserDefaults.standard.set(openDesignWorkspaceId, forKey: "openDesignWorkspaceId")
         
         withAnimation {
             saveMessage = "✅ 已保存"

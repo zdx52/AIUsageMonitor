@@ -20,7 +20,7 @@
   <img alt="Version" src="https://img.shields.io/badge/version-1.12.0-blue">
 </p>
 
-AIUsageMonitor is a lightweight macOS menu bar system monitor that displays real-time laptop temperature, CPU usage, AI service usage (DeepSeek / Tavily / MiniMax / OpenRouter / Command Code / OpenCode GO), and Hindsight memory stats. Supports auto-refresh and manual refresh.
+AIUsageMonitor is a lightweight macOS menu bar system monitor that displays real-time laptop temperature, CPU usage, AI service usage (DeepSeek / Tavily / MiniMax / OpenRouter / Command Code / OpenCode GO / Open Design AMR), and Hindsight memory stats. Supports auto-refresh and manual refresh.
 
 ## Prerequisites
 
@@ -76,6 +76,7 @@ After installation:
 - 🌐 **OpenRouter Usage** — Account balance (total/used/remaining) + today's spend via the Analytics API. Requires a Management Key
 - ✨ **MiniMax Token Plan** — China subscription usage (5h + weekly windows per model family, with countdown reset)
 - 🔄 **OpenCode GO** — RPC usage % with WKWebView login & browser fallback
+- 🧩 **Open Design (AMR)** — Coding Plan 5h / weekly rolling windows (used %) with reset countdowns + wallet balance, read from the locally installed Open Design `vela` CLI (no API key)
 - 🧠 **Hindsight Dashboard** — Opens native Hindsight Control Plane (port 9999) with official web UI for memory banks, recall, and entity exploration
 - 🌐 **Network Speed** — Real-time ↓↑ network speed, 3s refresh
 - 🟢 **Health Indicator** — Color-coded: default/orange/red for health status
@@ -130,6 +131,11 @@ cp -r .build/release/AIUsageMonitor AIUsageMonitor.app/Contents/MacOS/
 ```
 
 ## Changelog
+
+### Unreleased
+
+- 🧩 **Open Design (AMR) usage card** — New menu bar card showing the Coding Plan tier, 5-hour and weekly rolling windows (used % with reset countdowns), and wallet balance. The AMR API key cannot read usage (`/v1/usage`, `/v1/me`, `/v1/credits` all return 404 — upstream issue #8674), so this reads the account-side `vela billing preflight --workspace-id … --format json` shipped inside the local Open Design app. `vela` path is discovered by scanning the versioned app directories, the workspace id is auto-detected from the app log, and both can be overridden in Settings
+- 🎛️ **Settings** — Added an "Open Design (AMR) 用量" toggle and an optional workspace id field
 
 ### v1.12.0
 

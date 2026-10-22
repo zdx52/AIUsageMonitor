@@ -358,6 +358,39 @@ struct MenuBarView: View {
                         }
                     }
 
+                    // MARK: - Open Design AMR 数据
+                    if UserDefaults.standard.object(forKey: "showOpenDesign") as? Bool ?? true {
+                        UsageCard(
+                            icon: "square.stack.3d.up.fill",
+                            title: "Open Design (AMR)",
+                            iconColor: .indigo,
+                            backgroundColor: .indigo.opacity(0.08)
+                        ) {
+                            if let od = dataStore.openDesignUsage, !od.windows.isEmpty {
+                                if let tier = od.tier {
+                                    UsageRow(label: "计划", value: tier.uppercased())
+                                }
+                                ForEach(od.windows, id: \.seconds) { window in
+                                    UsageProgressRow(label: "\(window.label)窗口", percentage: window.usedPercent)
+                                    if let reset = window.resetsAt {
+                                        Text("重置于 \(countdownText(from: reset))")
+                                            .font(.caption2)
+                                            .foregroundStyle(.tertiary)
+                                    }
+                                }
+                                if let balance = od.balanceUsd {
+                                    UsageRow(label: "钱包余额", value: String(format: "$%.2f", balance))
+                                }
+                            } else {
+                                Text("暂无数据")
+                                    .foregroundStyle(.secondary)
+                                Text("需本机安装并登录 Open Design（读 vela billing）")
+                                    .font(.caption)
+                                    .foregroundStyle(.orange)
+                            }
+                        }
+                    }
+
                     // MARK: - MiniMax Token Plan
                     if UserDefaults.standard.object(forKey: "showMiniMax") as? Bool ?? true {
                         let showVideo = UserDefaults.standard.object(forKey: "showMiniMaxVideo") as? Bool ?? false
