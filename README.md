@@ -17,7 +17,7 @@
   <img alt="License" src="https://img.shields.io/github/license/zdx52/AIUsageMonitor">
   <img alt="Swift" src="https://img.shields.io/badge/swift-5.0-orange">
   <img alt="macOS" src="https://img.shields.io/badge/platform-macOS-lightgray">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.13.3-blue">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.13.4-blue">
 </p>
 
 AIUsageMonitor is a lightweight macOS menu bar system monitor that displays real-time laptop temperature, CPU usage, AI service usage (DeepSeek / Tavily / MiniMax / OpenRouter / Command Code / OpenCode GO / Open Design AMR), and Hindsight memory stats. Supports auto-refresh and manual refresh.
@@ -132,6 +132,14 @@ cp -r .build/release/AIUsageMonitor AIUsageMonitor.app/Contents/MacOS/
 ```
 
 ## Changelog
+
+### v1.13.4
+
+- 🐛 **Network speed dropped to zero mid-download** — `getifaddrs` only exposes `if_data.ifi_ibytes`, a 32-bit counter that wraps every 4 GiB. On wrap the delta turned negative, got clamped to 0, and the menu bar showed `↓0K` while the browser was still downloading (measured on this machine: the interface had really received 6.37 GB, the app could only read 2.08 GB). Deltas are now tracked per interface and a wrap is compensated by a full 4 GiB, so the reading stays correct across the boundary
+- ⚡ **1-second sampling** — The speed was sampled every 3 seconds and showed a 3-second average, which never matched the download client. Sampling and redraw now run once per second
+- 🎛️ **Settings → 网速刷新** — New picker for the refresh interval (1 / 2 / 3 / 5 seconds), applied immediately on save. Measured cost on this machine: 1s ≈ 1.4% CPU, 5s ≈ 0.55%
+- 🧊 **Numbers no longer freeze** — Both timers were registered in the default run-loop mode, so the speed stopped updating while a menu or the popover was open. They now run in `.common`
+- 🖌️ **Redraw only on change** — The menu bar title is skipped when nothing changed, avoiding a text re-render on every tick
 
 ### v1.13.3
 

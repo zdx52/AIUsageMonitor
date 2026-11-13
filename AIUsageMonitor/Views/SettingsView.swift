@@ -8,6 +8,7 @@ struct SettingsView: View {
     @State private var tavilyKey: String = ""
     @State private var miniMaxSubscriptionKey: String = ""
     @State private var refreshInterval: Double = 300
+    @State private var networkSpeedInterval: Double = 1
     @State private var showDeepSeekKey: Bool = false
     @State private var showTavilyKey: Bool = false
     @State private var showMiniMaxKey: Bool = false
@@ -334,6 +335,20 @@ struct SettingsView: View {
                             Text("\(Int(refreshInterval / 60)) 分钟")
                                 .frame(width: 60)
                         }
+                        HStack {
+                            Text("网速刷新")
+                            Picker("", selection: $networkSpeedInterval) {
+                                Text("1 秒").tag(1.0)
+                                Text("2 秒").tag(2.0)
+                                Text("3 秒").tag(3.0)
+                                Text("5 秒").tag(5.0)
+                            }
+                            .labelsHidden()
+                            .frame(width: 80)
+                            Text("菜单栏 ↓↑ 的更新间隔")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
                     }
                     .padding(.vertical, 4)
                 }
@@ -360,6 +375,9 @@ struct SettingsView: View {
         if let interval = UserDefaults.standard.object(forKey: "refreshInterval") as? Double {
             refreshInterval = interval
         }
+        if let speedInterval = UserDefaults.standard.object(forKey: "networkSpeedInterval") as? Double {
+            networkSpeedInterval = speedInterval
+        }
 
         showDeepSeek = UserDefaults.standard.object(forKey: "showDeepSeek") as? Bool ?? true
         showTavily = UserDefaults.standard.object(forKey: "showTavily") as? Bool ?? true
@@ -382,6 +400,7 @@ struct SettingsView: View {
         KeychainHelper.save(key: "opencode_go_api_key", value: openCodeGoKey)
         UserDefaults.standard.set(openCodeURL, forKey: "openCodeWorkspaceURL")
         UserDefaults.standard.set(refreshInterval, forKey: "refreshInterval")
+        UserDefaults.standard.set(networkSpeedInterval, forKey: "networkSpeedInterval")
         UserDefaults.standard.set(showDeepSeek, forKey: "showDeepSeek")
         UserDefaults.standard.set(showTavily, forKey: "showTavily")
         UserDefaults.standard.set(showMiniMax, forKey: "showMiniMax")

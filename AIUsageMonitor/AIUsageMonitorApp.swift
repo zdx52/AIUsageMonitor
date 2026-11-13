@@ -16,6 +16,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var statusItem: NSStatusItem?
     var popover: NSPopover?
     var eventMonitor: Any?
+    /// 上次写进菜单栏的内容指纹，内容没变就跳过重绘（省每秒一次的 CoreGraphics 文字渲染）
+    private var lastTitleKey = ""
     lazy var statusBarIcon: NSImage = {
         let img = NSImage(systemSymbolName: "chart.bar.fill", accessibilityDescription: nil) ?? NSImage()
         img.isTemplate = true
@@ -47,37 +49,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             popover.performClose(nil)
         }
         
-        // 每 3 秒更新标题（温度计按温度变色，其余文字保持默认色）
-        titleUpdateTimer = Timer.scheduledTimer(withTimeInterval: 3, repeats: true) { [weak self] _ in
-            guard let self = self, let button = self.statusItem?.button else { return }
-            
-            let attrString = NSMutableAttributedString()
-            
-            // 竖直温度计 SF Symbol（按温度变色）
-            if let td = self.dataStore.temperatureData {
-                let img = NSImage(systemSymbolName: "thermometer", accessibilityDescription: nil) ?? NSImage()
-                let attachment = NSTextAttachment()
-                attachment.image = img
-                attachment.bounds = CGRect(x: 0, y: -3, width: 11, height: 17)
-                attrString.append(NSAttributedString(attachment: attachment))
-                attrString.append(NSAttributedString(string: " "))
-                
-                let thermoColor: NSColor
-                switch td.thermalState {
-                case .critical, .serious: thermoColor = .systemRed
-                case .fair:               thermoColor = .systemOrange
-                case .nominal:            thermoColor = .systemGreen
-                @unknown default:         thermoColor = .labelColor
-                }
-                attrString.addAttribute(.foregroundColor, value: thermoColor, range: NSRange(location: 0, length: 1))
-            }
-            
-            // 其余文字（温度值 + CPU + 网速）保持默认色
-            let restString = NSAttributedString(string: self.dataStore.menuBarTitle, attributes: [.foregroundColor: NSColor.labelColor])
-            attrString.append(restString)
-            
-            button.attributedTitle = attrString
-        }
+        setupNetworkSpeedTimer()
         
         setupRefreshTimer()
         
@@ -123,12 +95,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         
         Task {
             await dataStore.refreshAll()
-        }
-        
-        networkSpeedTimer = Timer.scheduledTimer(withTimeInterval: 3, repeats: true) { [weak self] _ in
-            DispatchQueue.main.async {
-                self?.dataStore.updateNetworkSpeed()
-            }
         }
         
         // Hindsight 跟随用户设置的刷新间隔
@@ -233,6 +199,67 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.mainMenu = mainMenu
     }
     
+    /// 按设置（1/2/3/5 秒）重建网速采样和菜单栏重绘的 Timer
+    func setupNetworkSpeedTimer() {
+        networkSpeedTimer?.invalidate()
+        titleUpdateTimer?.invalidate()
+
+        let saved = UserDefaults.standard.object(forKey: "networkSpeedInterval") as? Double ?? 1
+        let interval = min(max(saved, 1), 10)
+
+        networkSpeedTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
+            DispatchQueue.main.async {
+                self?.dataStore.updateNetworkSpeed()
+            }
+        }
+        // .common：点菜单/弹窗交互期间也照常采样
+        RunLoop.main.add(networkSpeedTimer!, forMode: .common)
+
+        titleUpdateTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
+            DispatchQueue.main.async {
+                self?.refreshMenuBarTitle()
+            }
+        }
+        RunLoop.main.add(titleUpdateTimer!, forMode: .common)
+    }
+
+    /// 重绘菜单栏标题（温度计按温度变色，其余文字保持默认色）
+    func refreshMenuBarTitle() {
+        guard let button = statusItem?.button else { return }
+
+        // 内容没变就不重绘（网速稳定/空闲时省掉一次文字渲染）
+        let key = "\(dataStore.menuBarTitle)|\(dataStore.temperatureData?.thermalState.rawValue ?? -1)|\(dataStore.temperatureData?.cpuTemperature ?? 0)|\(dataStore.temperatureData?.batteryTemperature ?? 0)"
+        guard key != lastTitleKey else { return }
+        lastTitleKey = key
+
+        let attrString = NSMutableAttributedString()
+
+        // 竖直温度计 SF Symbol（按温度变色）
+        if let td = dataStore.temperatureData {
+            let img = NSImage(systemSymbolName: "thermometer", accessibilityDescription: nil) ?? NSImage()
+            let attachment = NSTextAttachment()
+            attachment.image = img
+            attachment.bounds = CGRect(x: 0, y: -3, width: 11, height: 17)
+            attrString.append(NSAttributedString(attachment: attachment))
+            attrString.append(NSAttributedString(string: " "))
+
+            let thermoColor: NSColor
+            switch td.thermalState {
+            case .critical, .serious: thermoColor = .systemRed
+            case .fair:               thermoColor = .systemOrange
+            case .nominal:            thermoColor = .systemGreen
+            @unknown default:         thermoColor = .labelColor
+            }
+            attrString.addAttribute(.foregroundColor, value: thermoColor, range: NSRange(location: 0, length: 1))
+        }
+
+        // 其余文字（温度值 + CPU + 网速）保持默认色
+        let restString = NSAttributedString(string: dataStore.menuBarTitle, attributes: [.foregroundColor: NSColor.labelColor])
+        attrString.append(restString)
+
+        button.attributedTitle = attrString
+    }
+
     func setupRefreshTimer() {
         refreshTimer?.invalidate()
         
@@ -257,6 +284,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     @objc func userDefaultsDidChange() {
         setupRefreshTimer()
         setupHindsightTimer()
+        setupNetworkSpeedTimer()
     }
     
     func setupHindsightTimer() {

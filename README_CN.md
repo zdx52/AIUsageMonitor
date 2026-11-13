@@ -13,7 +13,7 @@
   <img alt="License" src="https://img.shields.io/github/license/zdx52/AIUsageMonitor">
   <img alt="Swift" src="https://img.shields.io/badge/swift-5.0-orange">
   <img alt="macOS" src="https://img.shields.io/badge/platform-macOS-lightgray">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.13.3-blue">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.13.4-blue">
 </p>
 
 AIUsageMonitor 是一个 macOS 菜单栏轻量级系统监控工具，实时显示笔记本温度、CPU 使用率、AI 用量（DeepSeek / Tavily / MiniMax / OpenRouter / Command Code / OpenCode GO / Open Design AMR）和 Hindsight 记忆状态。支持自动刷新和手动刷新。
@@ -128,6 +128,14 @@ cp -r .build/release/AIUsageMonitor AIUsageMonitor.app/Contents/MacOS/
 ```
 
 ## 更新内容
+
+### v1.13.4
+
+- 🐛 **下载中网速掉到 0** — `getifaddrs` 只给 `if_data.ifi_ibytes`，是 32 位计数器，每 4 GiB 回绕一次。回绕时差值为负、被钳成 0，浏览器还在下载而菜单栏显示 `↓0K`（本机实测：网卡累计已收 6.37 GB，App 只能读到 2.08 GB）。现在按网卡分别记录上次计数，跨过回绕时补满 4 GiB，数字不再归零
+- ⚡ **改成 1 秒采样** — 原来 3 秒采一次、显示的是 3 秒平均速度，跟下载器里的瞬时值对不上。现在采样与重绘都是 1 秒
+- 🎛️ **设置新增「网速刷新」** — 下拉可选 1 / 2 / 3 / 5 秒，保存即生效。本机实测：1 秒约 1.4% CPU，5 秒约 0.55%
+- 🧊 **数字不再冻住** — 两个 Timer 原来只跑在默认 run-loop 模式，点开菜单或弹窗期间就停更；现在都加进 `.common`
+- 🖌️ **内容没变不重绘** — 菜单栏标题没有变化时跳过重绘，省掉每秒一次的文字渲染
 
 ### v1.13.3
 
