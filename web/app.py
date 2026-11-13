@@ -334,8 +334,15 @@ def _parse_grouped_characters(lines):
 
 def parse_outline(text):
     """Parse outline.md into structured volumes with chapters and details."""
-    # Split into volume blocks by ## 第X卷 / ## 卷N / ## 卷N 上/下 / ## 第X-Y章 headings
-    vol_pattern = re.compile(r'^##\s*(?:第[一二三四五六七八九十]+卷|卷\d+(?:[上中下])?[《·（( ]|第\d+\s*[-–—~至]\s*\d+\s*章)', re.MULTILINE)
+    # Split into volume blocks by ## 第X卷 / ## 卷N / ## 卷N 上/下 / ## 第X-Y章 headings,
+    # plus "# 第X部（第A-B章）…卷N《名》"-style H1 annotations that carry a chapter
+    # range (they double as volume starts for multi-卷 book files whose chapters hang
+    # under "# 单元N 细纲" H1s without their own ## range header).
+    vol_pattern = re.compile(
+        r'^#{1,2}\s*(?:第[一二三四五六七八九十]+卷|卷\d+(?:[上中下])?[《·（( ]|'
+        r'第\d+\s*[-–—~至]\s*\d+\s*章|'
+        r'第[一二三四五六七八九十]+部[（(]第?\d+\s*[-–—~至]\s*\d+\s*章?[）)])',
+        re.MULTILINE)
     splits = list(vol_pattern.finditer(text))
     
     volumes = []
@@ -362,6 +369,10 @@ def parse_outline(text):
         # Volume display name: strip all parenthesized content + 卷纲 suffix
         display_name = re.sub(r'[（(][^）)]*[)）]', '', title).strip()
         display_name = re.sub(r'\s*卷纲\s*', '', display_name).strip()
+        # "# 第三部（第81-120章）细纲 — 卷3《路是走出来的》" → "卷3《路是走出来的》"
+        vol_m = re.search(r'卷(\d+)《([^》]+)》', display_name)
+        if vol_m:
+            display_name = f"卷{vol_m.group(1)}《{vol_m.group(2)}》"
         display_name = display_name or title
         
         # Extract volume-level descriptions (**key**: value)
@@ -500,19 +511,42 @@ def group_volumes_by_parent(volumes, parent_defs):
             "name": p["name"],
             "range": p["range"],
             "subvolumes": [],
+            "chapters": [],
+            "descriptions": {},
             "is_parent": True,
         })
     remaining = []
+    # Pass 1: attach genuine child ranges (strictly inside a parent) as subvolumes.
     for v in volumes:
+        if not v.get("range"):
+            continue
+        lo, hi = v["range"]
+        for p in parents:
+            plo, phi = p["range"]
+            if (lo, hi) != (plo, phi) and plo <= lo and hi <= phi:
+                p["subvolumes"].append(v)
+                break
+    # Pass 2: exact-same-range flat volumes (parent annotation + its own file,
+    # e.g. 卷3). Their chapters/descriptions belong on the parent only when the
+    # parent has no subvolumes to render real content under; when it has, the
+    # flat volume is just the summary/placeholder block and must be dropped.
+    for v in volumes:
+        if not v.get("range"):
+            remaining.append(v)
+            continue
+        lo, hi = v["range"]
         placed = False
-        if v.get("range"):
-            lo, hi = v["range"]
-            for p in parents:
-                plo, phi = p["range"]
-                if plo <= lo and hi <= phi:
-                    p["subvolumes"].append(v)
-                    placed = True
-                    break
+        for p in parents:
+            plo, phi = p["range"]
+            if (lo, hi) == (plo, phi):
+                if not p["subvolumes"]:
+                    p.setdefault("chapters", []).extend(v.get("chapters", []))
+                    p.setdefault("descriptions", {}).update(v.get("descriptions", {}))
+                placed = True
+                break
+            if plo <= lo and hi <= phi:
+                placed = True
+                break
         if not placed:
             remaining.append(v)
     return parents + remaining
@@ -611,19 +645,41 @@ def parse_all_outlines(project_path):
                     v["chapters"].append({"num": n, "title": f"第{n}章", "details": {}})
             v["chapters"].sort(key=lambda c: c["num"])
 
+    # A parent annotation like "# 第三部（第81-120章）· 卷3《路是走出来的》" doubles as
+    # a flat volume of the same name/range (built above from the H1 split). When it will
+    # be grouped under an identical parent (same range), keep chapters on the parent
+    # instead of making an identical nested sub-volume; otherwise it renders as an
+    # empty parent (卷3) with a duplicated 卷3 nested under it.
+    for v in volumes:
+        if v["range"] and not v.get("is_parent"):
+            for other in volumes:
+                if other is not v and other.get("is_parent") and other["range"] == v["range"]:
+                    other.setdefault("chapters", []).extend(v["chapters"])
+                    other.setdefault("descriptions", {}).update(v.get("descriptions", {}))
+                    v["chapters"] = []
+
     # Rebuild all_chapters from the final, correctly-assigned volumes (handles
-    # chapters that fell into a later volume block by text order, e.g. `# 单元N 细纲`)
-    rebuilt = []
+    # chapters that fell into a later volume block by text order, e.g. `# 单元N 细纲`).
+    # Dedupe by num (placeholders lose to real detail entries).
+    rebuilt = {}
     for v in volumes:
         for c in v["chapters"]:
-            rebuilt.append({
-                "num": c["num"],
-                "title": c.get("title", f"第{c['num']}章"),
-                "act": v["name"],
-                "summary": "",
-                "details": c.get("details", {}),
-            })
-    all_chapters = sorted(rebuilt, key=lambda c: c["num"])
+            existing = rebuilt.get(c["num"])
+            if existing is None or (
+                not existing.get("details") and c.get("details")
+            ) or (
+                existing.get("title", "").startswith("第") and existing["title"].rstrip("章").isdigit()
+                and not str(c.get("title", "")).startswith(f"第{c['num']}章")
+            ):
+                rebuilt[c["num"]] = {
+                    "num": c["num"],
+                    "title": c.get("title", f"第{c['num']}章"),
+                    "act": v["name"],
+                    "summary": "",
+                    "details": c.get("details", {}),
+                }
+    all_chapters = [rebuilt[n] for n in sorted(rebuilt)]
+    # (chapters in subvolumes are not re-flattened here; consumers iterate volumes' chapters.)
 
     # Group volumes under parent volumes (卷1《杀穿红星厂》= 第1-40章 annotations)
     parent_defs = extract_parent_volume_defs(project_path)
@@ -1006,9 +1062,12 @@ def get_volume_info(project_path):
             written.discard(None)
             for v in outline_vols:
                 if v.get("is_parent"):
+                    # Subvolume chapters + parent's own chapters (e.g. 卷3 without ## blocks)
                     sub_total = sum(len(sub.get("chapters", [])) for sub in v.get("subvolumes", []))
                     sub_written = sum(1 for sub in v.get("subvolumes", []) for c in sub.get("chapters", []) if c["num"] in written)
-                    total, cnt = sub_total, sub_written
+                    own_chs = v.get("chapters", [])
+                    total = sub_total + len(own_chs)
+                    cnt = sub_written + sum(1 for c in own_chs if c["num"] in written)
                 else:
                     total = v["range"][1] - v["range"][0] + 1 if v.get("range") else len(v.get("chapters", []))
                     cnt = sum(1 for c in v.get("chapters", []) if c["num"] in written)
@@ -1478,6 +1537,9 @@ def novel_chapters(slug):
                 elif sub.get("chapters"):
                     for ch in sub["chapters"]:
                         vol_map[ch["num"]] = parent_name
+            # Parent's own chapters (no subvolumes, e.g. 卷3 细纲 without ## blocks)
+            for ch in vol.get("chapters", []):
+                vol_map[ch["num"]] = parent_name
         elif vol["range"]:
             for n in range(vol["range"][0], vol["range"][1] + 1):
                 # Only take the volume name portion before the range parentheses

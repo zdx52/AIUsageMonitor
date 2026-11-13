@@ -33,331 +33,333 @@ struct SettingsView: View {
     @State private var showOpenDesign: Bool = true
     @State private var openDesignWorkspaceId: String = ""
     
+    
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                // 标题
-                HStack {
-                    Text("⚙️ 设置")
-                        .font(.title2)
-                        .fontWeight(.bold)
-                    Spacer()
-                    if showMessage {
-                        Text(saveMessage)
-                            .font(.caption)
-                            .foregroundColor(.green)
-                            .transition(.opacity)
-                    }
-                    Text("v\(Bundle.main.appVersionString)")
-                    Button("保存") {
-                        saveSettings()
-                    }
-                    .keyboardShortcut("s", modifiers: .command)
-                    Button("关闭") {
-                        dismiss()
-                    }
-                    .keyboardShortcut(.escape, modifiers: [])
+        VStack(alignment: .leading, spacing: 12) {
+            // 标题
+            HStack {
+                Text("⚙️ 设置")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                Spacer()
+                if showMessage {
+                    Text(saveMessage)
+                        .font(.caption)
+                        .foregroundColor(.green)
+                        .transition(.opacity)
                 }
-                
-                Divider()
-                
-                // MARK: - 显示设置
-                GroupBox("👁️ 显示设置") {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("选择在菜单栏弹窗中显示哪些内容")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        Toggle("DeepSeek 余额", isOn: $showDeepSeek)
-                        Toggle("Tavily 用量", isOn: $showTavily)
-                        Toggle("MiniMax Token Plan", isOn: $showMiniMax)
-                        Toggle("OpenRouter 用量", isOn: $showOpenRouter)
-                        Toggle("Command Code 用量", isOn: $showCommandCode)
-                        Toggle("Open Design (AMR) 用量", isOn: $showOpenDesign)
-                        Toggle("OpenCode GO 用量", isOn: $showOpenCode)
-                        Toggle("Hindsight 记忆", isOn: $showHindsight)
-                    }
-                    .padding(.vertical, 4)
+                Text("v\(Bundle.main.appVersionString)")
+                Button("保存") {
+                    saveSettings()
                 }
-                
-                Divider()
-                
-                // DeepSeek 设置
-                GroupBox("🐋 DeepSeek") {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("API Key（用于获取余额）")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                .keyboardShortcut("s", modifiers: .command)
+                Button("关闭") {
+                    dismiss()
+                }
+                .keyboardShortcut(.escape, modifiers: [])
+            }
+            
+
+            Divider()
+            
+            ScrollView {
+                HStack(alignment: .top, spacing: 20) {
+                    // MARK: 左列
+                    VStack(alignment: .leading, spacing: 16) {
+                    // MARK: - 显示设置
+                    GroupBox("👁️ 显示设置") {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("选择在菜单栏弹窗中显示哪些内容")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            Toggle("DeepSeek 余额", isOn: $showDeepSeek)
+                            Toggle("Tavily 用量", isOn: $showTavily)
+                            Toggle("MiniMax Token Plan", isOn: $showMiniMax)
+                            Toggle("OpenRouter 用量", isOn: $showOpenRouter)
+                            Toggle("Command Code 用量", isOn: $showCommandCode)
+                            Toggle("Open Design (AMR) 用量", isOn: $showOpenDesign)
+                            Toggle("OpenCode GO 用量", isOn: $showOpenCode)
+                            Toggle("Hindsight 记忆", isOn: $showHindsight)
+                        }
+                        .padding(.vertical, 4)
+                    }
+                    // DeepSeek 设置
+                    GroupBox("🐋 DeepSeek") {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("API Key（用于获取余额）")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
                         
-                        HStack {
-                            if showDeepSeekKey {
-                                TextField("sk-...", text: $deepSeekKey)
-                            } else {
-                                SecureField("sk-...", text: $deepSeekKey)
-                            }
+                            HStack {
+                                if showDeepSeekKey {
+                                    TextField("sk-...", text: $deepSeekKey)
+                                } else {
+                                    SecureField("sk-...", text: $deepSeekKey)
+                                }
                             
-                            Button(action: { showDeepSeekKey.toggle() }) {
-                                Image(systemName: showDeepSeekKey ? "eye.slash" : "eye")
+                                Button(action: { showDeepSeekKey.toggle() }) {
+                                    Image(systemName: showDeepSeekKey ? "eye.slash" : "eye")
+                                }
                             }
-                        }
                         
-                        Text("获取方式: platform.deepseek.com → API Keys → 创建")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-                    }
-                    .padding(.vertical, 4)
-                }
-                
-                // Tavily 设置
-                GroupBox("🔍 Tavily") {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("API Key（用于获取用量）")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        
-                        HStack {
-                            if showTavilyKey {
-                                TextField("tvly-...", text: $tavilyKey)
-                            } else {
-                                SecureField("tvly-...", text: $tavilyKey)
-                            }
-                            
-                            Button(action: { showTavilyKey.toggle() }) {
-                                Image(systemName: showTavilyKey ? "eye.slash" : "eye")
-                            }
-                        }
-                        
-                        Text("获取方式: app.tavily.com → API Keys → 复制")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-                    }
-                    .padding(.vertical, 4)
-                }
-                
-                // OpenRouter 设置
-                GroupBox("🌐 OpenRouter") {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Management Key（用于查询账户充值/用量；普通 API Key 无权限）")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-
-                        HStack {
-                            if showOpenRouterKey {
-                                TextField("sk-or-v1-...", text: $openRouterKey)
-                            } else {
-                                SecureField("sk-or-v1-...", text: $openRouterKey)
-                            }
-
-                            Button(action: { showOpenRouterKey.toggle() }) {
-                                Image(systemName: showOpenRouterKey ? "eye.slash" : "eye")
-                            }
-                        }
-
-                        Text("获取方式: openrouter.ai → Settings → Keys → 创建 Management Key")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-
-                        Text("⚠️ 需要 Management Key；普通 API Key 调用用量接口会返回 403")
-                            .font(.caption2)
-                            .foregroundColor(.orange)
-                    }
-                    .padding(.vertical, 4)
-                }
-
-                // Command Code 设置
-                GroupBox("🐐 Command Code") {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("API Key（用于查询 GOAT 订阅用量/限额）")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-
-                        HStack {
-                            if showCommandCodeKey {
-                                TextField("user_...", text: $commandCodeKey)
-                            } else {
-                                SecureField("user_...", text: $commandCodeKey)
-                            }
-
-                            Button(action: { showCommandCodeKey.toggle() }) {
-                                Image(systemName: showCommandCodeKey ? "eye.slash" : "eye")
-                            }
-                        }
-
-                        Text("获取方式: commandcode.ai → Studio → API Keys → 生成")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-
-                        Text("⚠️ 同一把 key 同时用于 CLI / Provider API / 用量查询")
-                            .font(.caption2)
-                            .foregroundColor(.orange)
-                    }
-                    .padding(.vertical, 4)
-                }
-
-                // Open Design (AMR) 设置
-                GroupBox("🧩 Open Design (AMR)") {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("不需要 API Key：读本机 Open Design 自带 vela CLI 的已登录会话")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-
-                        Text("工作区 ID（留空自动从 App 日志探测）")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-
-                        TextField("ebovu8r07cuh4ekwtceqtgx2", text: $openDesignWorkspaceId)
-                            .textFieldStyle(.roundedBorder)
-
-                        Text("⚠️ amr-link 的 API key 读不到余量（/v1/usage 等全 404），只支持装了并登录 Open Design 的本机")
-                            .font(.caption2)
-                            .foregroundColor(.orange)
-                    }
-                    .padding(.vertical, 4)
-                }
-
-                // MiniMax Token Plan 设置
-                GroupBox("✨ MiniMax (中国)") {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("订阅 Key（用于查询 Token Plan 用量，非按量付费 API Key）")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-
-                        HStack {
-                            if showMiniMaxKey {
-                                TextField("eyJ...", text: $miniMaxSubscriptionKey)
-                            } else {
-                                SecureField("eyJ...", text: $miniMaxSubscriptionKey)
-                            }
-
-                            Button(action: { showMiniMaxKey.toggle() }) {
-                                Image(systemName: showMiniMaxKey ? "eye.slash" : "eye")
-                            }
-                        }
-
-                        Text("获取方式: platform.minimaxi.com → 订阅付费 → Token Plan → 查看订阅 Key（JWT 格式，以 eyJ 开头）")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-
-                        Text("⚠️ 仅支持订阅 Key；按量计费 API Key 不互通（官方明确不可混用）")
-                            .font(.caption2)
-                            .foregroundColor(.orange)
-
-                        Divider()
-
-                        Toggle("显示 video 模型用量", isOn: $showMiniMaxVideo)
-                            .help("video 模型（独立计费）默认隐藏，勾选后在菜单栏 MiniMax 卡片中显示")
-                    }
-                    .padding(.vertical, 4)
-                }
-
-                // OpenCode 设置
-                GroupBox("🔄 OpenCode GO") {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("工作区 URL（用于获取剩余用量）")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        
-                        TextField("https://opencode.ai/workspace/.../go", text: $openCodeURL)
-                            .textFieldStyle(.roundedBorder)
-
-                        Text("Go API Key（优先直查用量，免登录；console 订阅页复制）")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-
-                        HStack {
-                            if showOpenCodeGoKey {
-                                TextField("sk-...", text: $openCodeGoKey)
-                            } else {
-                                SecureField("sk-...", text: $openCodeGoKey)
-                            }
-
-                            Button(action: { showOpenCodeGoKey.toggle() }) {
-                                Image(systemName: showOpenCodeGoKey ? "eye.slash" : "eye")
-                            }
-                            .buttonStyle(.borderless)
-                        }
-                        
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("💡 登录 OpenCode（使用 GitHub / Google 账号）：")
+                            Text("获取方式: platform.deepseek.com → API Keys → 创建")
                                 .font(.caption2)
                                 .foregroundColor(.secondary)
+                        }
+                        .padding(.vertical, 4)
+                    }
+                    // Tavily 设置
+                    GroupBox("🔍 Tavily") {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("API Key（用于获取用量）")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        
+                            HStack {
+                                if showTavilyKey {
+                                    TextField("tvly-...", text: $tavilyKey)
+                                } else {
+                                    SecureField("tvly-...", text: $tavilyKey)
+                                }
                             
-                            HStack(spacing: 8) {
-                                Button("🔐 快速登录") {
-                                    UserDefaults.standard.set(openCodeURL, forKey: "openCodeWorkspaceURL")
-                                    OpenCodeService.shared.showLoginWindow(urlString: openCodeURL) { success in
-                                        DispatchQueue.main.async {
-                                            if success {
-                                                loginMessage = "✅ 登录成功！数据已刷新"
-                                                Task {
-                                                    try? await Task.sleep(nanoseconds: 1_000_000_000)
-                                                    await dataStore.refreshAll()
+                                Button(action: { showTavilyKey.toggle() }) {
+                                    Image(systemName: showTavilyKey ? "eye.slash" : "eye")
+                                }
+                            }
+                        
+                            Text("获取方式: app.tavily.com → API Keys → 复制")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        }
+                        .padding(.vertical, 4)
+                    }
+                    // OpenRouter 设置
+                    GroupBox("🌐 OpenRouter") {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("Management Key（用于查询账户充值/用量；普通 API Key 无权限）")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+
+                            HStack {
+                                if showOpenRouterKey {
+                                    TextField("sk-or-v1-...", text: $openRouterKey)
+                                } else {
+                                    SecureField("sk-or-v1-...", text: $openRouterKey)
+                                }
+
+                                Button(action: { showOpenRouterKey.toggle() }) {
+                                    Image(systemName: showOpenRouterKey ? "eye.slash" : "eye")
+                                }
+                            }
+
+                            Text("获取方式: openrouter.ai → Settings → Keys → 创建 Management Key")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+
+                            Text("⚠️ 需要 Management Key；普通 API Key 调用用量接口会返回 403")
+                                .font(.caption2)
+                                .foregroundColor(.orange)
+                        }
+                        .padding(.vertical, 4)
+                    }
+                    // 刷新间隔
+                    GroupBox("⏱️ 刷新间隔") {
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Slider(value: $refreshInterval, in: 60...1800, step: 60)
+                                Text("\(Int(refreshInterval / 60)) 分钟")
+                                    .frame(width: 60)
+                            }
+                            HStack {
+                                Text("网速刷新")
+                                Picker("", selection: $networkSpeedInterval) {
+                                    Text("1 秒").tag(1.0)
+                                    Text("2 秒").tag(2.0)
+                                    Text("3 秒").tag(3.0)
+                                    Text("5 秒").tag(5.0)
+                                }
+                                .labelsHidden()
+                                .frame(width: 80)
+                                Text("菜单栏 ↓↑ 的更新间隔")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    
+                    // MARK: 右列
+                    VStack(alignment: .leading, spacing: 16) {
+                    // Command Code 设置
+                    GroupBox("🐐 Command Code") {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("API Key（用于查询 GOAT 订阅用量/限额）")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+
+                            HStack {
+                                if showCommandCodeKey {
+                                    TextField("user_...", text: $commandCodeKey)
+                                } else {
+                                    SecureField("user_...", text: $commandCodeKey)
+                                }
+
+                                Button(action: { showCommandCodeKey.toggle() }) {
+                                    Image(systemName: showCommandCodeKey ? "eye.slash" : "eye")
+                                }
+                            }
+
+                            Text("获取方式: commandcode.ai → Studio → API Keys → 生成")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+
+                            Text("⚠️ 同一把 key 同时用于 CLI / Provider API / 用量查询")
+                                .font(.caption2)
+                                .foregroundColor(.orange)
+                        }
+                        .padding(.vertical, 4)
+                    }
+                    // Open Design (AMR) 设置
+                    GroupBox("🧩 Open Design (AMR)") {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("不需要 API Key：读本机 Open Design 自带 vela CLI 的已登录会话")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+
+                            Text("工作区 ID（留空自动从 App 日志探测）")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+
+                            TextField("ebovu8r07cuh4ekwtceqtgx2", text: $openDesignWorkspaceId)
+                                .textFieldStyle(.roundedBorder)
+
+                            Text("⚠️ amr-link 的 API key 读不到余量（/v1/usage 等全 404），只支持装了并登录 Open Design 的本机")
+                                .font(.caption2)
+                                .foregroundColor(.orange)
+                        }
+                        .padding(.vertical, 4)
+                    }
+                    // MiniMax Token Plan 设置
+                    GroupBox("✨ MiniMax (中国)") {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("订阅 Key（用于查询 Token Plan 用量，非按量付费 API Key）")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+
+                            HStack {
+                                if showMiniMaxKey {
+                                    TextField("eyJ...", text: $miniMaxSubscriptionKey)
+                                } else {
+                                    SecureField("eyJ...", text: $miniMaxSubscriptionKey)
+                                }
+
+                                Button(action: { showMiniMaxKey.toggle() }) {
+                                    Image(systemName: showMiniMaxKey ? "eye.slash" : "eye")
+                                }
+                            }
+
+                            Text("获取方式: platform.minimaxi.com → 订阅付费 → Token Plan → 查看订阅 Key（JWT 格式，以 eyJ 开头）")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+
+                            Text("⚠️ 仅支持订阅 Key；按量计费 API Key 不互通（官方明确不可混用）")
+                                .font(.caption2)
+                                .foregroundColor(.orange)
+
+                            Divider()
+
+                            Toggle("显示 video 模型用量", isOn: $showMiniMaxVideo)
+                                .help("video 模型（独立计费）默认隐藏，勾选后在菜单栏 MiniMax 卡片中显示")
+                        }
+                        .padding(.vertical, 4)
+                    }
+                    // OpenCode 设置
+                    GroupBox("🔄 OpenCode GO") {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("工作区 URL（用于获取剩余用量）")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        
+                            TextField("https://opencode.ai/workspace/.../go", text: $openCodeURL)
+                                .textFieldStyle(.roundedBorder)
+
+                            Text("Go API Key（优先直查用量，免登录；console 订阅页复制）")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+
+                            HStack {
+                                if showOpenCodeGoKey {
+                                    TextField("sk-...", text: $openCodeGoKey)
+                                } else {
+                                    SecureField("sk-...", text: $openCodeGoKey)
+                                }
+
+                                Button(action: { showOpenCodeGoKey.toggle() }) {
+                                    Image(systemName: showOpenCodeGoKey ? "eye.slash" : "eye")
+                                }
+                                .buttonStyle(.borderless)
+                            }
+                        
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("💡 登录 OpenCode（使用 GitHub / Google 账号）：")
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                            
+                                HStack(spacing: 8) {
+                                    Button("🔐 快速登录") {
+                                        UserDefaults.standard.set(openCodeURL, forKey: "openCodeWorkspaceURL")
+                                        OpenCodeService.shared.showLoginWindow(urlString: openCodeURL) { success in
+                                            DispatchQueue.main.async {
+                                                if success {
+                                                    loginMessage = "✅ 登录成功！数据已刷新"
+                                                    Task {
+                                                        try? await Task.sleep(nanoseconds: 1_000_000_000)
+                                                        await dataStore.refreshAll()
+                                                    }
+                                                } else {
+                                                    loginMessage = "⚠️ 登录取消"
                                                 }
-                                            } else {
-                                                loginMessage = "⚠️ 登录取消"
                                             }
                                         }
                                     }
-                                }
-                                .disabled(openCodeURL.isEmpty)
-                                .buttonStyle(.borderedProminent)
-                                .controlSize(.small)
+                                    .disabled(openCodeURL.isEmpty)
+                                    .buttonStyle(.borderedProminent)
+                                    .controlSize(.small)
                                 
-                                Button("🌐 浏览器") {
-                                    UserDefaults.standard.set(openCodeURL, forKey: "openCodeWorkspaceURL")
-                                    OpenCodeService.shared.openLoginInBrowser(urlString: openCodeURL)
-                                }
-                                .disabled(openCodeURL.isEmpty)
-                                .buttonStyle(.bordered)
-                                .controlSize(.small)
+                                    Button("🌐 浏览器") {
+                                        UserDefaults.standard.set(openCodeURL, forKey: "openCodeWorkspaceURL")
+                                        OpenCodeService.shared.openLoginInBrowser(urlString: openCodeURL)
+                                    }
+                                    .disabled(openCodeURL.isEmpty)
+                                    .buttonStyle(.bordered)
+                                    .controlSize(.small)
                                 
-                                Button("✅ 检测") {
-                                    Task { await dataStore.refreshAll() }
+                                    Button("✅ 检测") {
+                                        Task { await dataStore.refreshAll() }
+                                    }
+                                    .buttonStyle(.bordered)
+                                    .controlSize(.small)
                                 }
-                                .buttonStyle(.bordered)
-                                .controlSize(.small)
-                            }
                             
-                            if !loginMessage.isEmpty {
-                                Text(loginMessage)
-                                    .font(.caption)
-                                    .foregroundColor(loginMessage.contains("✅") ? .green : .orange)
+                                if !loginMessage.isEmpty {
+                                    Text(loginMessage)
+                                        .font(.caption)
+                                        .foregroundColor(loginMessage.contains("✅") ? .green : .orange)
+                                }
                             }
                         }
+                        .padding(.vertical, 4)
                     }
-                    .padding(.vertical, 4)
-                }
-                
-                // 刷新间隔
-                GroupBox("⏱️ 刷新间隔") {
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            Slider(value: $refreshInterval, in: 60...1800, step: 60)
-                            Text("\(Int(refreshInterval / 60)) 分钟")
-                                .frame(width: 60)
-                        }
-                        HStack {
-                            Text("网速刷新")
-                            Picker("", selection: $networkSpeedInterval) {
-                                Text("1 秒").tag(1.0)
-                                Text("2 秒").tag(2.0)
-                                Text("3 秒").tag(3.0)
-                                Text("5 秒").tag(5.0)
-                            }
-                            .labelsHidden()
-                            .frame(width: 80)
-                            Text("菜单栏 ↓↑ 的更新间隔")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
                     }
-                    .padding(.vertical, 4)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                
-                Divider()
+                .padding(.vertical, 4)
             }
-            .padding()
         }
-        .frame(width: 480)
+        .padding()
+        .frame(width: 960)
         .onAppear {
             loadSettings()
         }

@@ -111,6 +111,35 @@
                 </div>
             </div>
             {% endfor %}
+            {% if vol.descriptions %}
+            <div class="vol-desc">
+                {% for key, val in vol.descriptions.items() %}
+                {% if key not in ('第1-7章具体设计',) %}
+                <div class="desc-item"><strong>{{ key }}：</strong>{{ val }}</div>
+                {% endif %}
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% if vol.chapters %}
+            <div class="vol-chapters">
+                {% for ch in vol.chapters %}
+                <div class="ch-card">
+                    <div class="ch-header" onclick="toggleCh(this)">
+                        <span class="ch-toggle">▶</span>
+                        <span class="ch-num">第{{ ch.num }}章</span>
+                        <span class="ch-title">{{ ch.title }}</span>
+                    </div>
+                    {% if ch.details %}
+                    <div class="ch-body" style="display:none">
+                        {% for key, val in ch.details.items() %}
+                        <div class="ch-detail"><strong>{{ key }}：</strong>{{ val }}</div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
         </div>
     </div>
     {% else %}

@@ -17,7 +17,7 @@
   <img alt="License" src="https://img.shields.io/github/license/zdx52/AIUsageMonitor">
   <img alt="Swift" src="https://img.shields.io/badge/swift-5.0-orange">
   <img alt="macOS" src="https://img.shields.io/badge/platform-macOS-lightgray">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.13.4-blue">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.13.5-blue">
 </p>
 
 AIUsageMonitor is a lightweight macOS menu bar system monitor that displays real-time laptop temperature, CPU usage, AI service usage (DeepSeek / Tavily / MiniMax / OpenRouter / Command Code / OpenCode GO / Open Design AMR), and Hindsight memory stats. Supports auto-refresh and manual refresh.
@@ -132,6 +132,14 @@ cp -r .build/release/AIUsageMonitor AIUsageMonitor.app/Contents/MacOS/
 ```
 
 ## Changelog
+
+### v1.13.5
+
+- 🧭 **Settings panel is now two columns** — It had grown into one tall column (≈1400pt of content, endless scrolling). It is now split left/right: display toggles, DeepSeek, Tavily, OpenRouter and refresh intervals on the left; Command Code, Open Design, MiniMax and OpenCode GO on the right. Window width 480 → 960, and the title/save/close bar stays pinned while the body scrolls
+- 🏷️ **Menu label** — The dashboard entry is now labelled 「记忆」 instead of 「看板」
+- 📖 **Outline page: 部-level volumes** — Outlines that mark a volume only via an H1 annotation (`# 第三部（第81-120章）· 卷3《路是走出来的》`) are now recognised as volume starts, so those chapters no longer fall into the previous volume. A parent whose range equals a flat volume reuses that volume's chapters instead of nesting a duplicate child, and chapters are deduped by number with real detail entries winning over placeholders
+- 🗂️ **Outline page: volume notes and chapter cards** — Volume-level notes render under each volume header, and every chapter is now a collapsible card
+- ✅ **Regression test** — `web/test_vol3_parse.py` asserts the 卷1 / 卷2 / 卷3 tree parsed from the real 七零年代 outline
 
 ### v1.13.4
 

@@ -13,7 +13,7 @@
   <img alt="License" src="https://img.shields.io/github/license/zdx52/AIUsageMonitor">
   <img alt="Swift" src="https://img.shields.io/badge/swift-5.0-orange">
   <img alt="macOS" src="https://img.shields.io/badge/platform-macOS-lightgray">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.13.4-blue">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.13.5-blue">
 </p>
 
 AIUsageMonitor 是一个 macOS 菜单栏轻量级系统监控工具，实时显示笔记本温度、CPU 使用率、AI 用量（DeepSeek / Tavily / MiniMax / OpenRouter / Command Code / OpenCode GO / Open Design AMR）和 Hindsight 记忆状态。支持自动刷新和手动刷新。
@@ -128,6 +128,14 @@ cp -r .build/release/AIUsageMonitor AIUsageMonitor.app/Contents/MacOS/
 ```
 
 ## 更新内容
+
+### v1.13.5
+
+- 🧭 **设置页改成左右两列** — 原来一列堆到约 1400pt，全在滚。现在左列：显示设置、DeepSeek、Tavily、OpenRouter、刷新间隔；右列：Command Code、Open Design、MiniMax、OpenCode GO。窗口宽 480 → 960，标题/保存/关闭固定在顶部，只有主体滚动
+- 🏷️ **菜单栏改名** — 看板入口的文字改成「记忆」
+- 📖 **大纲页：部级（H1）卷识别** — 只用 H1 标注卷的写法（`# 第三部（第81-120章）· 卷3《路是走出来的》`）原来不被当成卷起点，那批章节会掉进上一卷。现在认这种标注；父卷范围与某个平级卷相同时直接复用它的章节，不再往里套一个重名子卷；章节按章号去重，有详情的条目优先于占位条目
+- 🗂️ **大纲页：卷纲说明 + 章节卡片** — 卷级说明显示在卷标题下方，每章变成可展开折叠的卡片
+- ✅ **回归测试** — `web/test_vol3_parse.py` 用真实的《七零年代：手艺人她杀疯了》大纲断言 卷1 / 卷2 / 卷3 的解析结果
 
 ### v1.13.4
 

@@ -18,7 +18,7 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
                 self.hostingView = NSHostingView(rootView: AnyView(settingsView))
                
                 let panel = NSPanel(
-                    contentRect: NSRect(x: 0, y: 0, width: 480, height: 10),
+                    contentRect: NSRect(x: 0, y: 0, width: 960, height: 10),
                     styleMask: [.titled, .closable, .resizable, .utilityWindow, .nonactivatingPanel],
                     backing: .buffered,
                     defer: false
@@ -31,13 +31,13 @@ class SettingsWindowController: NSWindowController, NSWindowDelegate {
                 panel.hasShadow = true
                 panel.backgroundColor = .controlBackgroundColor
                 panel.contentView = self.hostingView
-                // 根据内容动态适配高度，不超过 800，不低于 400
+                // 根据内容动态适配高度，不超过 800，不低于 400（宽度固定 960，设置页为左右两列）
                 if let view = self.hostingView {
                     let fittingSize = view.fittingSize
                     let height = fittingSize.height > 0
                         ? min(max(fittingSize.height, 400), 800)
                         : 640
-                    panel.setContentSize(NSSize(width: 480, height: height))
+                    panel.setContentSize(NSSize(width: 960, height: height))
                 }
                 panel.delegate = self
                 

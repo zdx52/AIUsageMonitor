@@ -530,7 +530,7 @@ struct MenuBarView: View {
                         DashboardWindowController.shared.show()
                     }
                 }) {
-                    Label("看板", systemImage: "chart.bar.doc.horizontal")
+                    Label("记忆", systemImage: "chart.bar.doc.horizontal")
                         .font(.caption)
                 }
                 
